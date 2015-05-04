@@ -32,6 +32,7 @@ def transfer(dest_type, source, dest_path, dest_options, cache_control_max_age, 
     do_upload = true
     if overwrite == false
       if bucket.files.head(dest_path) != nil
+        #File exists in destination
         do_upload = false
         puts "Skipping upload of  file #{source} to bucket #{dest_options[:bucket]}/#{dest_path}."
       end
@@ -224,7 +225,7 @@ optparse = OptionParser.new do |opts|
   opts.on('-i', '--uid id ID', 'Unique ID to for segment files') { |v| options[:uid] = v }
   opts.on('-p', '--prepend_id pID', 'Upload directory prepend id ID') { |v| options[:prepend_id] = v }
   opts.on('-j', '--skip_upload_file FILE', 'If this file exists the upload/copy is stopped') { |v| options[:skip_upload_file] = v }
-  opts.on('-o', '--overwrite', 'Upload or copy even the file is already in the destination (Default = false') { |v| options[:overwrite] = true }
+  opts.on('-o', '--overwrite', 'Upload or copy even the segment file is already in the destination (Default = false') { |v| options[:overwrite] = true }
 
   opts.on('-m', '--cache_max_age_manifest SECS', 'Cache control data for manifest files (Default = 1)') { |v| options[:cache_max_age_manifest] = v }
   opts.on('-t', '--cache_max_age_segments SECS', 'Cache control data for segments files (Default = 3600)') { |v| options[:cache_max_age_segments] = v }
@@ -279,7 +280,7 @@ options[:local_tmp_path_stream] = File.join(options[:local_tmp_path], File.dirna
 #It helps to create a organized environment (easier to read for humans than using only uid)
 
 #overwrite
-#If it is already in S3 don't upload
+#If the segment file is already in S3 don't upload
 
 #Control vars
 exit = false
@@ -357,7 +358,7 @@ while exit == false
         #Upload rendition manifest
         tmp = get_relative_path(options[:local_tmp_path], rendition_manifest_file[:local_path])
         s3_file_name = options[:prepend_id].to_s + File.join(File.dirname(tmp), File.basename(tmp)).to_s
-        transfer(options[:dest_type], rendition_manifest_file[:local_path], s3_file_name, options[:dest_options], options[:cache_max_age_manifest], options[:overwrite])
+        transfer(options[:dest_type], rendition_manifest_file[:local_path], s3_file_name, options[:dest_options], options[:cache_max_age_manifest], true)
         last_path_uploaded_chunklist = s3_file_name
       end
     end
@@ -366,7 +367,7 @@ while exit == false
       #Upload playlist manifest
       tmp = get_relative_path(options[:local_tmp_path], playlist_manifest_file[:local_path])
       s3_file_name = options[:prepend_id].to_s + File.join(File.dirname(tmp), File.basename(tmp)).to_s
-      transfer(options[:dest_type], playlist_manifest_file[:local_path], s3_file_name, options[:dest_options], options[:cache_max_age_manifest], options[:overwrite])
+      transfer(options[:dest_type], playlist_manifest_file[:local_path], s3_file_name, options[:dest_options], options[:cache_max_age_manifest], true)
       uploaded_playlist_manifest = true
     end
   rescue Exception => e
