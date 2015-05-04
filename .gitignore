@@ -26,3 +26,9 @@
 *.exe
 *.out
 *.app
+
+#Rubymine
+*.idea
+
+#Credentials file
+cred
