@@ -30,5 +30,11 @@
 #Rubymine
 *.idea
 
-#Credentials file
+#Credentials dir
 cred
+
+#Local tests dir
+localtest
+
+#test filke
+skip_upload

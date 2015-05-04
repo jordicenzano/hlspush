@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 #
-#Donwload HLS -> Pus the,
+#Donwload HLS and push the files (m3u8 and ts) to a local path or S3
 #
 
 require 'open-uri'
@@ -11,63 +11,62 @@ require 'pathname'
 require 'fog'
 require 'optparse'
 
+def transfer(dest_type, source, dest_path, dest_options, cache_control_max_age, overwrite)
 
-def aws_upload_S3(bucket_name, upload_path, file_name, max_age, credentials, not_upload_if_remote_file_exists = false)
-
-  if bucket_name[0] == "."
-    dest = File.join(bucket_name.to_s + upload_path)
+  if dest_type.casecmp('s3') != 0
+    dest = File.join(dest_options[:bucket].to_s + dest_path)
 
     #Create directory if it is needed
     FileUtils::mkdir_p(File.dirname(dest)) unless File.exists?(File.dirname(dest))
 
-    FileUtils.cp(file_name, dest)
-    puts "Copied file #{file_name} to #{dest}."
+    FileUtils.cp(source, dest)
+    puts "Copied file #{source} to #{dest}."
 
     "COPIED"
   else
-    connection = Fog::Storage.new(credentials)
+    fog_options = {:provider => 'AWS', :aws_access_key_id => dest_options[:key], :aws_secret_access_key => dest_options[:secret], :region => dest_options[:region]}
+    connection = Fog::Storage.new(fog_options)
 
-    bucket = connection.directories.get(bucket_name)
+    bucket = connection.directories.get(dest_options[:bucket])
 
     do_upload = true
-    if not_upload_if_remote_file_exists == true
-      if bucket.files.head(upload_path) != nil
+    if overwrite == false
+      if bucket.files.head(dest_path) != nil
         do_upload = false
-        puts "Skipping upload of  file #{file_name} to bucket #{bucket_name}/#{upload_path}."
+        puts "Skipping upload of  file #{source} to bucket #{dest_options[:bucket]}/#{dest_path}."
       end
     end
 
     if do_upload == true
-      file = bucket.files.create(:key => upload_path, :body => File.open(file_name), :metadata => {"Cache-Control" => "max-age=#{max_age}"},:public => true )
-      puts "Uploaded file #{file_name} to bucket #{bucket_name}/#{upload_path}."
+      file = bucket.files.create(:key => dest_path, :body => File.open(source), :metadata => {"Cache-Control" => "max-age=#{cache_control_max_age}"},:public => true )
+      puts "Uploaded file #{source} to bucket #{dest_options[:bucket]}/#{dest_path}."
 
       file
     end
   end
 end
 
-def aws_delete_S3(bucket_name, upload_path, credentials)
+def remote_delete(dest_type, file_path, dest_options)
 
-  if (upload_path != nil)
-
-    if bucket_name[0] == "."
-      dest = File.join(bucket_name.to_s + upload_path)
-
+  if (file_path != nil)
+    if dest_type.casecmp('s3') != 0
+      dest = File.join(dest_options[:bucket].to_s + file_path)
       if File.exists?(dest)
         File.delete(dest)
         puts "Deleted #{dest}."
       end
     else
-      connection = Fog::Storage.new(credentials)
-
-      bucket = connection.directories.get(bucket_name)
-      file = bucket.files.get(upload_path)
+      fog_options = {:provider => 'AWS', :aws_access_key_id => dest_options[:key], :aws_secret_access_key => dest_options[:secret], :region => dest_options[:region]}
+      connection = Fog::Storage.new(fog_options)
+      bucket = connection.directories.get(dest_options[:bucket])
+      file = bucket.files.get(file_path)
       if !file.nil?
         file.destroy
-        puts "Deleted #{bucket_name}/#{upload_path}."
+        puts "Deleted #{dest_options[:bucket]}/#{file_path}."
       end
     end
   end
+
 end
 
 def get_segments_from_manifests(rendition_manifest_file)
@@ -140,7 +139,7 @@ def get_relative_path(project_path, absolute_path)
   absolute_path_ext.relative_path_from(project_path_ext)
 end
 
-def change_media_id(src, new_media_id, id)
+def change_media_id(src, new_media_id)
   new_name = ""
 
   begin
@@ -148,9 +147,9 @@ def change_media_id(src, new_media_id, id)
     if !data.empty?
       tmp = data[0][0] + new_media_id.to_s + data[0][1]
       if File.dirname(tmp) != "."
-        new_name = File.join(File.dirname(tmp), id.to_s + File.basename(tmp))
+        new_name = File.join(File.dirname(tmp), File.basename(tmp))
       else
-        new_name = id.to_s + File.basename(tmp)
+        new_name = File.basename(tmp)
       end
     else
       raise
@@ -162,30 +161,7 @@ def change_media_id(src, new_media_id, id)
   new_name
 end
 
-def change_manifest_reference_ids(playlist_manifest_file, id)
-  manifest_file_modi = playlist_manifest_file + ".modi"
-
-  File.open(manifest_file_modi, 'w') do |f_write|
-    File.open(playlist_manifest_file, 'r') do |f_read|
-      while strline = f_read.gets
-        data = strline.scan(/([^#].*.m3u8)/)
-        if !data.empty?
-          if File.dirname(strline) != "."
-            strline = File.join(File.dirname(strline), id.to_s + File.basename(strline))
-          else
-            strline = id.to_s + File.basename(strline)
-          end
-        end
-        f_write.puts strline
-      end
-    end
-  end
-
-  File.delete(playlist_manifest_file)
-  File.rename(manifest_file_modi, playlist_manifest_file)
-end
-
-def change_manifest_media_ids(manifest_file, new_media_id, id)
+def change_manifest_media_ids(manifest_file, new_media_id)
 
   manifest_file_modi = manifest_file + ".modi"
 
@@ -196,9 +172,9 @@ def change_manifest_media_ids(manifest_file, new_media_id, id)
         if !data.empty?
           tmp = data[0][0] + new_media_id.to_s + data[0][1]
           if File.dirname(tmp) != "."
-            strline = File.join(File.dirname(tmp), id.to_s + File.basename(tmp))
+            strline = File.join(File.dirname(tmp), File.basename(tmp))
           else
-            strline = id.to_s + File.basename(tmp)
+            strline = File.basename(tmp)
           end
         end
         f_write.puts strline
@@ -214,10 +190,10 @@ end
 $stderr.sync = true
 
 #Parse args
-aws_options = {:key => nil, :secret => nil, :region => nil, :bucket =>nil, :cache_max_age_manifest => 1, :cache_max_age_segments => 3600}
+aws_options = {:key => nil, :secret => nil, :region => nil, :bucket =>nil}
 local_options = {:path => nil}
 
-options = {:source_url => nil, :local_tmp_path => nil, :dest_type => 's3', :dest_options => aws_options, :uid =>nil, :prepend_id => nil, :skip_upload_file => nil}
+options = {:source_url => nil, :local_tmp_path => nil, :dest_type => 's3', :dest_options => aws_options, :uid =>nil, :prepend_id => nil, :skip_upload_file => nil, :overwrite => false, :cache_max_age_manifest => 1, :cache_max_age_segments => 3600}
 
 optparse = OptionParser.new do |opts|
   opts.banner = "HLS download push (by Jordi Cenzano)\nUsage: ./hlsdownload -s \"http://localhost/vod/hello.m3u8\" -l ~/test -k \"AGAGAGAGGAGAGU\" -s \"hajhjashjh&*kajskajs\" -r \"us-west-1\" -b \"hls-origin\" -m 1 -t 3600 -j ~/skip_upload -i abcdf -p a"
@@ -229,7 +205,7 @@ optparse = OptionParser.new do |opts|
   opts.on('-u', '--source_url URL', 'Source url of HLS manifest') { |v| options[:source_url] = v }
   opts.on('-l', '--local_tmp_path PATH', 'temporal local path to store the downloaded files') { |v| options[:local_tmp_path] = v }
   opts.on('-d', '--dest_type (S3/local)', 'Sets the destination of processed HLS, can be "S3" or "local" (default = s3)') do |v|
-    if "s3".strcmp(v) != true
+    if "s3".casecmp(v) != 0
       options[:dest_type] = 'local'
       options[:dest_options] = local_options
     end
@@ -244,13 +220,15 @@ optparse = OptionParser.new do |opts|
   opts.on('-r', '--region REGION', 'AWS S3 region to upload the files') { |v| options[:dest_options][:region] = v }
   opts.on('-b', '--bucket BUCKET', 'AWS destination bucket name') { |v| options[:dest_options][:bucket] = v }
 
-  opts.on('-m', '--cache_max_age_manifest SECS', 'Cache control data for manifest files (Default = 1)') { |v| options[:dest_options][:cache_max_age_manifest] = v }
-  opts.on('-t', '--cache_max_age_segments SECS', 'Cache control data for segments files (Default = 3600)') { |v| options[:dest_options][:cache_max_age_segments] = v }
-
   #General optional
   opts.on('-i', '--uid id ID', 'Unique ID to for segment files') { |v| options[:uid] = v }
-  opts.on('-p', '--prepend_id', 'Upload directory prepend id ID') { |v| options[:prepend_id] = v }
-  opts.on('-j', '--skip_upload_file', 'If this file exists the upload/copy is stopped') { |v| options[:skip_upload_file] = v }
+  opts.on('-p', '--prepend_id pID', 'Upload directory prepend id ID') { |v| options[:prepend_id] = v }
+  opts.on('-j', '--skip_upload_file FILE', 'If this file exists the upload/copy is stopped') { |v| options[:skip_upload_file] = v }
+  opts.on('-o', '--overwrite', 'Upload or copy even the file is already in the destination (Default = false') { |v| options[:overwrite] = true }
+
+  opts.on('-m', '--cache_max_age_manifest SECS', 'Cache control data for manifest files (Default = 1)') { |v| options[:cache_max_age_manifest] = v }
+  opts.on('-t', '--cache_max_age_segments SECS', 'Cache control data for segments files (Default = 3600)') { |v| options[:cache_max_age_segments] = v }
+
 end
 
 #Check parameters
@@ -288,77 +266,64 @@ end
 $stderr.puts "Read parameters: #{options.inspect}"
 
 #Compute the full local path
-options[:local_tmp_path_stream] = File.join(options[:local_tmp_path], File.dirname(URI.parse(optionsp[:source_url]).path))
-
+options[:local_tmp_path_stream] = File.join(options[:local_tmp_path], File.dirname(URI.parse(options[:source_url]).path))
 
 #uid
 #Rename segments in order to sync the data from different wowza https origins (Wowza origin segments example: media-ucxikcdtm_2.ts media-ucxikcdtm_212.ts)
-#The idea is to overwite the ID -> media-NEW_ID_2.ts
+#The idea is to overwrite the ID -> media-NEW_ID_2.ts
 #Doing that we ensure the uniqueness of every job in different machines, and we simplify the implementation of redundant jobs
-
-#local_id = nil
-#if ARGV.length > 10
-#  local_id = ARGV[10]
-#end
 
 #prepend_id
 #Prepend to the "prepend_id" to the upload path
 #Using this parameter we can upload different jobs with the same uid to the same bucket
-#It helps to create a organaised environment (easier to read for humans than using only uid)
+#It helps to create a organized environment (easier to read for humans than using only uid)
 
-#TODO -------
+#overwrite
+#If it is already in S3 don't upload
 
-local_path_id = nil
-if ARGV.length > 10
-  local_path_id = ARGV[10]
-end
-
-s3_credentials = {:provider => 'AWS', :aws_access_key_id => aws_key,:aws_secret_access_key => aws_secret, :region => aws_region}
-
+#Control vars
 exit = false
-
 uploaded_playlist_manifest = false
-
-upload_to_s3 = true
-first_upload_after_activation = false
-
-#If is in S3 means it will be in CDN, so don not waste time uploading
-s3_check_file_enabled = true
-
 last_path_uploaded_chunklist = nil
+disable_upload = false
+upload_state = :enabled
+first_upload_after_activation = true
 
 while exit == false
   begin
-    #Check if s3 upload is disabled
-    if File.exist?(skip_upload_file.to_s)
-      if (upload_to_s3 == true)
-        $stderr.puts "Upload OFF!!!!"
-        #Delete chunk list manifest
-        aws_delete_S3(aws_bucket_name, last_path_uploaded_chunklist, s3_credentials)
-        upload_to_s3 = false
+    #Check if s3 upload is disabled at every iteration
+    if !options[:skip_upload_file].nil?
+      disable_upload = File.exist?(skip_upload_file.to_s)
+    end
+
+    if upload_state == :disabled
+      if disable_upload == false
+        $stderr.puts "Upload ON!!!!"
+        first_upload_after_activation = true
+        upload_state = :enabled
       end
     else
-      if (upload_to_s3 == false)
-        $stderr.puts "Upload ON!!!!"
-        upload_to_s3 = true
-        first_upload_after_activation = true
+      if disable_upload == true
+        $stderr.puts "Upload OFF!!!!"
+        #Delete chunk list manifest
+        remote_delete(options[:dest_type], last_path_uploaded_chunklist, options[:dest_options])
+        upload_state = :disabled
       end
     end
 
     #Download playlist manifest
-    playlist_manifest_file = download(playlist_manifest_url, local_path_stream)
+    playlist_manifest_file = download(options[:source_url], options[:local_tmp_path_stream])
 
     #Analise playlist manifest for rendition manifests
     renditions_manifests = get_renditions_manifests(playlist_manifest_file[:local_path])
 
     #For every rendition manifest
-
     renditions_manifests.each do |rendition_manifest|
       rendition_segment_uploaded = false
-      renditions_manifest_url = merge_url(playlist_manifest_url, rendition_manifest.first)
+      renditions_manifest_url = merge_url(options[:source_url], rendition_manifest.first)
 
       #download rendition manifest
-      rendition_manifest_path = File.join(local_path_stream, File.dirname(rendition_manifest.first))
+      rendition_manifest_path = File.join(options[:local_tmp_path_stream], File.dirname(rendition_manifest.first))
       rendition_manifest_file = download(renditions_manifest_url, rendition_manifest_path)
 
       #Analise rendition manifest to find segments
@@ -373,36 +338,35 @@ while exit == false
         rendition_segment = download(segment_url, rendition_path, true)
 
         #If this client was activated, ensure to upload all segments of the rendition manifest
-        if (rendition_segment[:downloaded] == true || first_upload_after_activation == true) && upload_to_s3 == true
+        if (rendition_segment[:downloaded] == true || first_upload_after_activation == true) && upload_state == :enabled
           #Upload new rendition to S3
-          s3_filename = local_path_id.to_s + get_relative_path(local_path_base, rendition_segment[:local_path]).to_s
-          if !rename_segments.nil?
-            s3_filename = local_path_id.to_s + change_media_id(get_relative_path(local_path_base, rendition_segment[:local_path]), rename_segments, local_id)
+          s3_file_name = options[:prepend_id].to_s + get_relative_path(options[:local_tmp_path], rendition_segment[:local_path]).to_s
+          if !options[:uid].nil?
+            s3_file_name = options[:prepend_id].to_s + change_media_id(get_relative_path(options[:local_tmp_path], rendition_segment[:local_path]), options[:uid])
           end
-          if (aws_upload_S3(aws_bucket_name, s3_filename, rendition_segment[:local_path], max_age_segments, s3_credentials, s3_check_file_enabled) != nil)
-            rendition_segment_uploaded = true
+          if (transfer(options[:dest_type], rendition_segment[:local_path], s3_file_name, options[:dest_options], options[:cache_max_age_segments], options[:overwrite]) != nil)
+             rendition_segment_uploaded = true
           end
         end
       end
 
-      if rendition_segment_uploaded == true && upload_to_s3 == true
-        if !rename_segments.nil?
-          change_manifest_media_ids(rendition_manifest_file[:local_path], rename_segments, local_id)
+      if rendition_segment_uploaded == true && upload_state == :enabled
+        if !options[:uid].nil?
+          change_manifest_media_ids(rendition_manifest_file[:local_path], options[:uid])
         end
         #Upload rendition manifest
-        tmp = get_relative_path(local_path_base, rendition_manifest_file[:local_path])
-        s3_file_name = local_path_id.to_s + File.join(File.dirname(tmp), local_id.to_s + File.basename(tmp)).to_s
-        aws_upload_S3(aws_bucket_name, s3_file_name,rendition_manifest_file[:local_path], max_age_manifest, s3_credentials)
+        tmp = get_relative_path(options[:local_tmp_path], rendition_manifest_file[:local_path])
+        s3_file_name = options[:prepend_id].to_s + File.join(File.dirname(tmp), File.basename(tmp)).to_s
+        transfer(options[:dest_type], rendition_manifest_file[:local_path], s3_file_name, options[:dest_options], options[:cache_max_age_manifest], options[:overwrite])
         last_path_uploaded_chunklist = s3_file_name
       end
     end
 
-    if uploaded_playlist_manifest == false && upload_to_s3 == true
+    if uploaded_playlist_manifest == false && upload_state == :enabled
       #Upload playlist manifest
-      change_manifest_reference_ids(playlist_manifest_file[:local_path], local_id)
-      tmp = get_relative_path(local_path_base, playlist_manifest_file[:local_path])
-      s3_file_name = local_path_id.to_s + File.join(File.dirname(tmp), local_id.to_s + File.basename(tmp)).to_s
-      aws_upload_S3(aws_bucket_name, s3_file_name, playlist_manifest_file[:local_path], max_age_manifest, s3_credentials, s3_check_file_enabled)
+      tmp = get_relative_path(options[:local_tmp_path], playlist_manifest_file[:local_path])
+      s3_file_name = options[:prepend_id].to_s + File.join(File.dirname(tmp), File.basename(tmp)).to_s
+      transfer(options[:dest_type], playlist_manifest_file[:local_path], s3_file_name, options[:dest_options], options[:cache_max_age_manifest], options[:overwrite])
       uploaded_playlist_manifest = true
     end
   rescue Exception => e
