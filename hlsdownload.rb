@@ -42,8 +42,6 @@ def transfer(dest_type, source, dest_path, dest_options, cache_control_max_age, 
       file = bucket.files.create(:key => dest_path, :body => File.open(source), :metadata => {"Cache-Control" => "max-age=#{cache_control_max_age}"},:public => true )
       puts "Uploaded file #{source} to bucket #{dest_options[:bucket]}/#{dest_path}."
 
-      puts file.inspect
-
       file
     end
   end
