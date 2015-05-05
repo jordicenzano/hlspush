@@ -444,7 +444,12 @@ while exit == false
       #Create the main playlist with redundant streams
       if !options[:prepend_id].nil? && !options[:prepend_backup_id].nil?
         master_playlist_local_file_name = File.join(options[:local_tmp_path], File.basename(playlist_manifest_file[:local_path]))
-        create_master_manifest_redundant_streams(playlist_manifest_file[:local_path], master_playlist_local_file_name, options[:prepend_id], options[:prepend_backup_id])
+
+        tmp = get_relative_path(options[:local_tmp_path], playlist_manifest_file[:local_path])
+        prepend_local = dst_local_path + options[:prepend_id].to_s + File.dirname(tmp).to_s + "/"
+        prepend_bck = dst_local_path + options[:prepend_backup_id].to_s + File.dirname(tmp).to_s + "/"
+
+        create_master_manifest_redundant_streams(playlist_manifest_file[:local_path], master_playlist_local_file_name, prepend_local, prepend_bck)
         #Upload the main playlist with redundant streams
         master_playlist_remote_file_name = dst_local_path + File.basename(playlist_manifest_file[:local_path]).to_s
         transfer(options[:dest_type], master_playlist_local_file_name, master_playlist_remote_file_name, options[:dest_options], options[:cache_max_age_manifest], true)
@@ -460,7 +465,7 @@ while exit == false
   #Check if the "OTHER" upload it's stuck
   if !master_playlist_remote_file_name.nil?
     #Check if the other upload is working
-    updated_sec = get_chunklist_last_updated_sec(options[:dest_type],last_path_uploaded_chunklist_bck, options[:dest_options])
+    updated_sec = get_chunklist_last_updated_sec(options[:dest_type], last_path_uploaded_chunklist_bck, options[:dest_options])
     #Delete remote chunklist if is not updating properly
     #TODO: Auto threshold
     if (updated_sec > 20)
