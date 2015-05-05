@@ -74,12 +74,9 @@ def get_chunklist_last_updated_sec(dest_type, file_path, dest_options)
   last_update = nil
 
   if (file_path != nil)
-    puts "Find: #{file_path}"
-
     if dest_type.casecmp('s3') != 0
       if File.exists?(file_path)
         last_update = File.mtime(file_path)
-        puts "Found local: #{file_path}"
       end
     else
       fog_options = {:provider => 'AWS', :aws_access_key_id => dest_options[:key], :aws_secret_access_key => dest_options[:secret], :region => dest_options[:region]}
@@ -87,7 +84,6 @@ def get_chunklist_last_updated_sec(dest_type, file_path, dest_options)
       bucket = connection.directories.get(dest_options[:bucket])
       file = bucket.files.get(file_path)
       if !file.nil?
-        puts "Found s3: #{file_path}"
         last_update = file.last_modified
       end
     end
@@ -96,8 +92,6 @@ def get_chunklist_last_updated_sec(dest_type, file_path, dest_options)
   if !last_update.nil?
     sec =  Time.now - last_update
   end
-
-  puts "Old: #{sec}"
 
   sec
 end
