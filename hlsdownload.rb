@@ -452,7 +452,7 @@ while exit == false
         create_master_manifest_redundant_streams(playlist_manifest_file[:local_path], master_playlist_local_file_name, prepend_local, prepend_bck)
         #Upload the main playlist with redundant streams
         master_playlist_remote_file_name = dst_local_path + File.basename(playlist_manifest_file[:local_path]).to_s
-        transfer(options[:dest_type], master_playlist_local_file_name, master_playlist_remote_file_name, options[:dest_options], options[:cache_max_age_manifest], true)
+        transfer(options[:dest_type], master_playlist_local_file_name, master_playlist_remote_file_name, options[:dest_options], options[:cache_max_age_manifest], false)
       end
 
       uploaded_playlist_manifest = true
