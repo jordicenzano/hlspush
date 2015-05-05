@@ -468,7 +468,7 @@ while exit == false
     updated_sec = get_chunklist_last_updated_sec(options[:dest_type], last_path_uploaded_chunklist_bck, options[:dest_options])
     #Delete remote chunklist if is not updating properly
     #TODO: Auto threshold
-    if (updated_sec > 20)
+    if (updated_sec > 6)
       puts "Detected BACKUP updating FAILED!!!!! (#{last_path_uploaded_chunklist_bck})"
       remote_delete(options[:dest_type], last_path_uploaded_chunklist_bck, options[:dest_options])
     end
