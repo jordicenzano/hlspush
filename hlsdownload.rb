@@ -478,13 +478,13 @@ while exit == false
     end
 
     if uploaded_playlist_manifest == false && upload_state == :enabled
-      #Upload playlist manifest
+      #Upload simple playlist manifest
       tmp = get_relative_path(options[:local_tmp_path], playlist_manifest_file[:local_path])
       dst_file_name = dst_local_path + options[:prepend_id].to_s + File.join(File.dirname(tmp), File.basename(tmp)).to_s
       transfer(options[:dest_type], playlist_manifest_file[:local_path], dst_file_name, options[:dest_options], options[:cache_max_age_manifest], true)
 
-      #Create the main playlist with redundant streams
       if !options[:prepend_id].nil? && !options[:prepend_backup_id].nil?
+        #Create the main playlist with redundant streams & upload it
         master_playlist_local_file_name = File.join(options[:local_tmp_path], File.basename(playlist_manifest_file[:local_path]))
 
         tmp = get_relative_path(options[:local_tmp_path], playlist_manifest_file[:local_path])
@@ -492,8 +492,9 @@ while exit == false
         prepend_bck = dst_local_path + options[:prepend_backup_id].to_s + File.dirname(tmp).to_s + "/"
 
         create_master_manifest_redundant_streams(playlist_manifest_file[:local_path], master_playlist_local_file_name, prepend_local, prepend_bck)
+
         #Upload the main playlist with redundant streams
-        master_playlist_remote_file_name = dst_local_path + File.basename(playlist_manifest_file[:local_path]).to_s
+        master_playlist_remote_file_name = dst_local_path + options[:prepend_id].to_s + File.join(File.dirname(tmp), "#{File.basename(tmp, ".*")}_redundant.m3u8").to_s
         transfer(options[:dest_type], master_playlist_local_file_name, master_playlist_remote_file_name, options[:dest_options], options[:cache_max_age_manifest], false)
       end
 
