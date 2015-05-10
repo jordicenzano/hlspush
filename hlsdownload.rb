@@ -430,6 +430,8 @@ while exit == false
     #Analise playlist manifest for rendition manifests
     renditions_manifests = get_renditions_manifests(playlist_manifest_file[:local_path])
 
+    #TODO: Create a thread per rendition manifest (more efficient)
+
     #For every rendition manifest
     renditions_manifests.each do |rendition_manifest|
       rendition_segment_uploaded = false
@@ -495,6 +497,7 @@ while exit == false
         prepend_local = dst_local_path + options[:prepend_id].to_s + File.dirname(tmp).to_s + "/"
         prepend_bck = dst_local_path + options[:prepend_backup_id].to_s + File.dirname(tmp).to_s + "/"
 
+        #TODO: Create absolute URLs
         create_master_manifest_redundant_streams(playlist_manifest_file[:local_path], master_playlist_local_file_name, prepend_local, prepend_bck)
 
         #Upload the main playlist with redundant streams
@@ -515,7 +518,7 @@ while exit == false
 
   rescue SystemExit, Interrupt
     exit = true
-    log(:info, "Captured SIGINT / SIGTERM), exiting...")
+    log(:info, "Captured SIGINT / SIGTERM, exiting...")
   rescue Exception => e
     log(:error, "Error: #{e.message}, #{e.backtrace}")
   end

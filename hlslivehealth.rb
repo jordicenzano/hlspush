@@ -64,7 +64,24 @@ end
 
 def merge_url(playlist_url, renditions_manifest)
   uri = URI.parse(playlist_url)
-  base_url = File.join( uri.scheme + "://" + uri.host, File.dirname(uri.path) )
+  uri_path = File.dirname(uri.path).to_s
+
+  #Process ./ and ../
+  while path[0..1] == "./"
+    uri_path = uri_path[2..uri_path.length]
+  end
+
+  eliminate_dirs = 0
+  while uri_path[0..2] == "../"
+    uri_path = uri_path[3..uri_path.length]
+    eliminate_dirs = eliminate_dirs + 1
+  end
+  if eliminate_dirs > 0
+    tmp = uri_path.split("/")
+    uri_path = tmp[1..tmp.length - eliminate_dirs - 1].join("/")
+  end
+
+  base_url = File.join( uri.scheme + "://" + uri.host, uri_path )
 
   File.join(base_url, renditions_manifest)
 end
@@ -219,6 +236,8 @@ while exit == false
       end
     end
 
+    #TODO: Create a thread for chunklist -> More efficient
+
     #Check update times
     chunklist_abs_url = Array.new
     chunklists.each do |chunklist_file|
@@ -243,7 +262,7 @@ while exit == false
     sleep (sleep_secs)
   rescue SystemExit, Interrupt
     exit = true
-    log(:info, "Captured SIGINT / SIGTERM), exiting...")
+    log(:info, "Captured SIGINT / SIGTERM, exiting...")
   rescue Exception => e
     log(:error, "#{e.message}, #{e.backtrace}", options[:verbose])
   end
