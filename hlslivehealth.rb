@@ -124,11 +124,13 @@ def get_chunklist_to_delete(chunklist_times, update_treshold_secs)
   end
 
   #Delete all chunklists from the same source
-  uri_delete = URI(delete_element[:url])
-  chunklist_times.each do |chunk_list|
-    url_chunklist = URI(chunk_list[:url])
-    if uri_delete.scheme == url_chunklist.scheme && uri_delete.host == url_chunklist.host && File.dirname(uri_delete.path) == File.dirname(url_chunklist.path)
-      chunklist_to_delete << url_chunklist.to_s
+  if !delete_element.nil?
+    uri_delete = URI(delete_element[:url])
+    chunklist_times.each do |chunk_list|
+      url_chunklist = URI(chunk_list[:url])
+      if uri_delete.scheme == url_chunklist.scheme && uri_delete.host == url_chunklist.host && File.dirname(uri_delete.path) == File.dirname(url_chunklist.path)
+        chunklist_to_delete << url_chunklist.to_s
+      end
     end
   end
 
