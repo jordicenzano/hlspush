@@ -398,7 +398,7 @@ while exit == false
   begin
     #Check if s3 upload is disabled at every iteration
     if !options[:skip_upload_file].nil?
-      disable_upload = File.exist?(skip_upload_file.to_s)
+      disable_upload = File.exist?(options[:skip_upload_file].to_s)
     end
 
     if upload_state == :disabled
