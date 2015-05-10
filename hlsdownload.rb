@@ -11,6 +11,11 @@ require 'pathname'
 require 'fog'
 require 'optparse'
 
+def log(type, str)
+  time = Time.now
+  puts "[#{time.strftime("%Y-%m-%d %H:%M:%S.%L")}] #{type.to_s.upcase} - #{str}"
+end
+
 def transfer(dest_type, source, dest_path, dest_options, cache_control_max_age, overwrite)
 
   if dest_type.casecmp('s3') != 0
@@ -20,7 +25,7 @@ def transfer(dest_type, source, dest_path, dest_options, cache_control_max_age, 
     FileUtils::mkdir_p(File.dirname(dest)) unless File.exists?(File.dirname(dest))
 
     FileUtils.cp(source, dest)
-    puts "Copied file #{source} to #{dest}."
+    log(:info, "Copied file #{source} to #{dest}.")
 
     "COPIED"
   else
@@ -34,13 +39,13 @@ def transfer(dest_type, source, dest_path, dest_options, cache_control_max_age, 
       if bucket.files.head(dest_path) != nil
         #File exists in destination
         do_upload = false
-        puts "Skipping upload of  file #{source} to bucket #{dest_options[:bucket]}/#{dest_path}."
+        log(:info,"Skipping upload of  file #{source} to bucket #{dest_options[:bucket]}/#{dest_path}.")
       end
     end
 
     if do_upload == true
       file = bucket.files.create(:key => dest_path, :body => File.open(source), :metadata => {"Cache-Control" => "max-age=#{cache_control_max_age}"},:public => true )
-      puts "Uploaded file #{source} to bucket #{dest_options[:bucket]}/#{dest_path}."
+      log(:info, "Uploaded file #{source} to bucket #{dest_options[:bucket]}/#{dest_path}.")
 
       file
     end
@@ -54,7 +59,7 @@ def remote_delete(dest_type, files_path, dest_options)
       files_path.each do |file_path|
         if File.exists?(file_path)
           File.delete(file_path)
-          puts "Deleted #{file_path}."
+          log(:info, "Deleted #{file_path}.")
         end
       end
     else
@@ -66,7 +71,7 @@ def remote_delete(dest_type, files_path, dest_options)
         file = bucket.files.get(file_path)
         if !file.nil?
           file.destroy
-          puts "Deleted #{dest_options[:bucket]}/#{file_path}."
+          log(:info, "Deleted #{dest_options[:bucket]}/#{file_path}.")
         end
       end
     end
@@ -206,7 +211,7 @@ def get_segment_duration(manifest_file)
       data = strline.scan(/#EXT-X-TARGETDURATION:([0-9.]+)/)
       if !data.empty?
         segment_duration = data[0][0].to_f
-        puts "Detected segment duration of: #{segment_duration} secs"
+        log(:info, "Detected segment duration of: #{segment_duration} secs")
         break
       end
     end
@@ -350,7 +355,7 @@ rescue OptionParser::InvalidOption, OptionParser::MissingArgument
 end
 
 #Show readed options
-puts "Read parameters: #{options.inspect}"
+log("info", "Read parameters: #{options.inspect}")
 
 #Compute the full local path
 options[:local_tmp_path_stream] = File.join(options[:local_tmp_path], File.dirname(URI.parse(options[:source_url]).path))
@@ -371,13 +376,14 @@ options[:local_tmp_path_stream] = File.join(options[:local_tmp_path], File.dirna
 #Control vars
 exit = false
 uploaded_playlist_manifest = false
-last_path_uploaded_chunklist = Array.new
-last_path_uploaded_chunklist_bck = Array.new
 disable_upload = false
 upload_state = :enabled
 first_upload_after_activation = true
 master_playlist_remote_file_name = nil
 segment_duration_secs = nil
+
+last_path_uploaded_chunklist = Array.new
+last_path_uploaded_chunklist_bck = Array.new
 
 #Set the correct local destination path in case that destination = local
 dst_local_path = ""
@@ -397,18 +403,22 @@ while exit == false
 
     if upload_state == :disabled
       if disable_upload == false
-        puts "Upload ON!!!!"
+        log(:info, "Upload ON!!!!")
         first_upload_after_activation = true
         upload_state = :enabled
       end
     else
       if disable_upload == true
-        puts "Upload OFF!!!!"
+        log(:info, "Upload OFF!!!!")
         #Delete chunk list manifest
         remote_delete(options[:dest_type], last_path_uploaded_chunklist, options[:dest_options])
         upload_state = :disabled
       end
     end
+
+    #Clear last chunklist paths
+    last_path_uploaded_chunklist = Array.new
+    last_path_uploaded_chunklist_bck = Array.new
 
     #Download playlist manifest
     playlist_manifest_file = download(options[:source_url], options[:local_tmp_path_stream])
@@ -501,12 +511,12 @@ while exit == false
     if updated_sec > 0
       #Delete remote chunklist if is not updating properly
       if (updated_sec > segment_duration_secs * 1.5)
-        puts "Detected BACKUP updating FAILED!!!!! (#{last_path_uploaded_chunklist_bck.join(", ")})"
+        log(:warning, "Detected BACKUP updating FAILED!!!!! (#{last_path_uploaded_chunklist_bck.join(", ")})")
         remote_delete(options[:dest_type], last_path_uploaded_chunklist_bck, options[:dest_options])
       end
     else
       if @show_msg_alone.nil?
-        puts "Not detected backup upload, assuming it is alone"
+        log(:warning, "Not detected backup upload, assuming it is alone")
         @show_msg_alone = true
       end
     end
