@@ -47,50 +47,60 @@ def transfer(dest_type, source, dest_path, dest_options, cache_control_max_age, 
   end
 end
 
-def remote_delete(dest_type, file_path, dest_options)
+def remote_delete(dest_type, files_path, dest_options)
 
-  if (file_path != nil)
+  if !files_path.empty?
     if dest_type.casecmp('s3') != 0
-      if File.exists?(file_path)
-        File.delete(file_path)
-        puts "Deleted #{file_path}."
+      files_path.each do |file_path|
+        if File.exists?(file_path)
+          File.delete(file_path)
+          puts "Deleted #{file_path}."
+        end
       end
     else
       fog_options = {:provider => 'AWS', :aws_access_key_id => dest_options[:key], :aws_secret_access_key => dest_options[:secret], :region => dest_options[:region]}
       connection = Fog::Storage.new(fog_options)
       bucket = connection.directories.get(dest_options[:bucket])
-      file = bucket.files.get(file_path)
-      if !file.nil?
-        file.destroy
-        puts "Deleted #{dest_options[:bucket]}/#{file_path}."
+
+      files_path.each do |file_path|
+        file = bucket.files.get(file_path)
+        if !file.nil?
+          file.destroy
+          puts "Deleted #{dest_options[:bucket]}/#{file_path}."
+        end
       end
     end
   end
 
 end
 
-def get_chunklist_last_updated_sec(dest_type, file_path, dest_options)
+def get_chunklist_last_updated_sec(dest_type, files_path, dest_options)
   sec = 0
   last_update = nil
 
-  if (file_path != nil)
+  if !files_path.empty?
     if dest_type.casecmp('s3') != 0
-      if File.exists?(file_path)
-        last_update = File.mtime(file_path)
+      files_path.each do |file_path|
+        if File.exists?(file_path)
+          last_update = [File.mtime(file_path).to_f, last_update.to_f].max
+        end
       end
     else
       fog_options = {:provider => 'AWS', :aws_access_key_id => dest_options[:key], :aws_secret_access_key => dest_options[:secret], :region => dest_options[:region]}
       connection = Fog::Storage.new(fog_options)
       bucket = connection.directories.get(dest_options[:bucket])
-      file = bucket.files.get(file_path)
-      if !file.nil?
-        last_update = file.last_modified
+
+      files_path.each do |file_path|
+        file = bucket.files.get(file_path)
+        if !file.nil?
+          last_update = [file.last_modified.to_f, last_update.to_f].max
+        end
       end
     end
   end
 
   if !last_update.nil?
-    sec =  Time.now - last_update
+    sec =  Time.now.to_f - last_update
   end
 
   sec
@@ -186,6 +196,23 @@ def change_media_id(src, new_media_id)
   end
 
   new_name
+end
+
+def get_segment_duration(manifest_file)
+  segment_duration = nil
+
+  File.open(manifest_file, 'r') do |f_read|
+    while strline = f_read.gets
+      data = strline.scan(/#EXT-X-TARGETDURATION:([0-9.]+)/)
+      if !data.empty?
+        segment_duration = data[0][0].to_f
+        puts "Detected segment duration of: #{segment_duration} secs"
+        break
+      end
+    end
+  end
+
+  segment_duration
 end
 
 def change_manifest_media_ids(manifest_file, new_media_id)
@@ -344,12 +371,13 @@ options[:local_tmp_path_stream] = File.join(options[:local_tmp_path], File.dirna
 #Control vars
 exit = false
 uploaded_playlist_manifest = false
-last_path_uploaded_chunklist = nil
-last_path_uploaded_chunklist_bck = nil
+last_path_uploaded_chunklist = Array.new
+last_path_uploaded_chunklist_bck = Array.new
 disable_upload = false
 upload_state = :enabled
 first_upload_after_activation = true
 master_playlist_remote_file_name = nil
+segment_duration_secs = nil
 
 #Set the correct local destination path in case that destination = local
 dst_local_path = ""
@@ -430,8 +458,12 @@ while exit == false
         dst_file_name = dst_local_path + options[:prepend_id].to_s + File.join(File.dirname(tmp), File.basename(tmp)).to_s
         dst_file_name_bck = dst_local_path + options[:prepend_backup_id].to_s + File.join(File.dirname(tmp), File.basename(tmp)).to_s
         transfer(options[:dest_type], rendition_manifest_file[:local_path], dst_file_name, options[:dest_options], options[:cache_max_age_manifest], true)
-        last_path_uploaded_chunklist = dst_file_name
-        last_path_uploaded_chunklist_bck = dst_file_name_bck
+
+        last_path_uploaded_chunklist << dst_file_name
+        last_path_uploaded_chunklist_bck << dst_file_name_bck
+        if segment_duration_secs.nil?
+          segment_duration_secs = get_segment_duration(rendition_manifest_file[:local_path])
+        end
       end
     end
 
@@ -466,15 +498,21 @@ while exit == false
   if !master_playlist_remote_file_name.nil?
     #Check if the other upload is working
     updated_sec = get_chunklist_last_updated_sec(options[:dest_type], last_path_uploaded_chunklist_bck, options[:dest_options])
-    #Delete remote chunklist if is not updating properly
-    #TODO: Auto threshold
-    if (updated_sec > 6)
-      puts "Detected BACKUP updating FAILED!!!!! (#{last_path_uploaded_chunklist_bck})"
-      remote_delete(options[:dest_type], last_path_uploaded_chunklist_bck, options[:dest_options])
+    if updated_sec > 0
+      #Delete remote chunklist if is not updating properly
+      if (updated_sec > segment_duration_secs * 1.5)
+        puts "Detected BACKUP updating FAILED!!!!! (#{last_path_uploaded_chunklist_bck.join(", ")})"
+        remote_delete(options[:dest_type], last_path_uploaded_chunklist_bck, options[:dest_options])
+      end
+    else
+      if @show_msg_alone.nil?
+        puts "Not detected backup upload, assuming it is alone"
+        @show_msg_alone = true
+      end
     end
   end
 
-  sleep (1.0)
+  sleep (0.2)
 
   first_upload_after_activation = false
 end
