@@ -229,10 +229,10 @@ while exit == false
 
     #Process update times and decide if is needed to delete the chunklists from any of the sources
     chunklist_to_delete = get_chunklist_to_delete(chunklist_updated_times, segment_duration_secs * options[:error_threshold])
-    log(:warning, "Chunklist to delete: #{chunklist_to_delete.join(", ")}", options[:verbose])
 
     #Delete chunklist from outdated source
     if !chunklist_to_delete.empty?
+      log(:warning, "Chunklist to delete: #{chunklist_to_delete.join(", ")}", options[:verbose])
       s3_delete_files(chunklist_to_delete, options)
     end
 
