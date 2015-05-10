@@ -257,13 +257,13 @@ def create_master_manifest_redundant_streams(manifest_source_file, manifest_dest
             if !datam3u8.empty?
               f_write.puts strline
 
-              strlinem3u8_local = local_prepend_id.to_s + strlinem3u8
+              strlinem3u8_local = strlinem3u8
               f_write.puts strlinem3u8_local
 
               #Bck
               f_write.puts strline
 
-              strlinem3u8_bck = backup_prepend_id.to_s + strlinem3u8
+              strlinem3u8_bck = "../../" + backup_prepend_id.to_s + strlinem3u8
               f_write.puts strlinem3u8_bck
               break
             end
