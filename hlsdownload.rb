@@ -415,7 +415,7 @@ while exit == false
       if disable_upload == true
         log(:info, "Upload OFF!!!!")
         #Delete chunk list manifest
-        remote_delete(options[:dest_type], last_path_uploaded_chunklist, options[:dest_options])
+        #remote_delete(options[:dest_type], last_path_uploaded_chunklist, options[:dest_options])
         upload_state = :disabled
       end
     end
