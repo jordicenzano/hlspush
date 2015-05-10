@@ -398,7 +398,7 @@ end
 
 while exit == false
   begin
-    time_start = Time.now
+    time_start = Time.now.to_f
 
     #Check if s3 upload is disabled at every iteration
     if !options[:skip_upload_file].nil?
