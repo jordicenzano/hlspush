@@ -1,2 +1,2 @@
-rm -r ./localtest
-rm skip_upload
+rm -r -f ./localtest
+rm -f skip_upload
