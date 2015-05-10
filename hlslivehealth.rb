@@ -67,13 +67,13 @@ def merge_url(playlist_url, renditions_manifest)
   uri_path = File.dirname(uri.path).to_s
 
   #Process ./ and ../
-  while path[0..1] == "./"
-    uri_path = uri_path[2..uri_path.length]
+  while renditions_manifest[0..1] == "./"
+    renditions_manifest = renditions_manifest[2..renditions_manifest.length]
   end
 
   eliminate_dirs = 0
-  while uri_path[0..2] == "../"
-    uri_path = uri_path[3..uri_path.length]
+  while renditions_manifest[0..2] == "../"
+    renditions_manifest = renditions_manifest[3..renditions_manifest.length]
     eliminate_dirs = eliminate_dirs + 1
   end
   if eliminate_dirs > 0
