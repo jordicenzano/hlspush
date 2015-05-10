@@ -382,6 +382,8 @@ first_upload_after_activation = true
 master_playlist_remote_file_name = nil
 segment_duration_secs = nil
 
+loop_time_max_secs = 2.5
+
 last_path_uploaded_chunklist = Array.new
 last_path_uploaded_chunklist_bck = Array.new
 
@@ -396,6 +398,8 @@ end
 
 while exit == false
   begin
+    time_start = Time.now
+
     #Check if s3 upload is disabled at every iteration
     if !options[:skip_upload_file].nil?
       disable_upload = File.exist?(options[:skip_upload_file].to_s)
@@ -500,30 +504,19 @@ while exit == false
 
       uploaded_playlist_manifest = true
     end
+
+    loop_time_secs = Time.now.to_f - time_start
+    sleep_secs = [loop_time_max_secs - loop_time_secs, 0.01].max
+    log(:debug, "Process loop time: #{loop_time_secs}s, next sleep #{sleep_secs}")
+
+    sleep (sleep_secs)
+
+    first_upload_after_activation = false
+
+  rescue SystemExit, Interrupt
+    exit = true
+    log(:info, "Captured SIGINT / SIGTERM), exiting...")
   rescue Exception => e
-    puts "Error: #{e.message}, #{e.backtrace}"
+    log (:error, "Error: #{e.message}, #{e.backtrace}")
   end
-
-  #TODO: Create other service for this task
-  #Check if the "OTHER" upload it's stuck
-  if !master_playlist_remote_file_name.nil?
-    #Check if the other upload is working
-    updated_sec = get_chunklist_last_updated_sec(options[:dest_type], last_path_uploaded_chunklist_bck, options[:dest_options])
-    if updated_sec > 0
-      #Delete remote chunklist if is not updating properly
-      if (updated_sec > segment_duration_secs * 1.5)
-        log(:warning, "Detected BACKUP updating FAILED!!!!! (#{last_path_uploaded_chunklist_bck.join(", ")})")
-        remote_delete(options[:dest_type], last_path_uploaded_chunklist_bck, options[:dest_options])
-      end
-    else
-      if @show_msg_alone.nil?
-        log(:warning, "Not detected backup upload, assuming it is alone")
-        @show_msg_alone = true
-      end
-    end
-  end
-
-  sleep (0.2)
-
-  first_upload_after_activation = false
 end
