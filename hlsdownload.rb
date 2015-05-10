@@ -517,6 +517,6 @@ while exit == false
     exit = true
     log(:info, "Captured SIGINT / SIGTERM), exiting...")
   rescue Exception => e
-    log (:error, "Error: #{e.message}, #{e.backtrace}")
+    log(:error, "Error: #{e.message}, #{e.backtrace}")
   end
 end
