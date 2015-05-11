@@ -38,3 +38,6 @@ localtest
 
 #test filke
 skip_upload
+
+#log
+log

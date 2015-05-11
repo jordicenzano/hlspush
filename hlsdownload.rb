@@ -382,7 +382,7 @@ first_upload_after_activation = true
 master_playlist_remote_file_name = nil
 segment_duration_secs = nil
 
-loop_time_max_secs = 2.5
+loop_time_max_secs = 0.5
 
 last_path_uploaded_chunklist = Array.new
 last_path_uploaded_chunklist_bck = Array.new
