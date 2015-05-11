@@ -122,8 +122,12 @@ def s3_delete_files(files_url, options)
     file_path = s3_get_path_from_url(file_url)
     file = bucket.files.get(file_path)
     if !file.nil?
-      file.destroy
-      log(:info, "Deleted #{options[:bucket]}/#{file_path}.")
+      begin
+        file.destroy
+        log(:info, "Deleted #{options[:bucket]}/#{file_path}.")
+      rescue Exception => e
+        log(:warning, "Problem deleting #{options[:bucket]}/#{file_path}.")
+      end
     end
   end
 end
