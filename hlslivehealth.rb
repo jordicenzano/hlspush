@@ -174,8 +174,8 @@ optparse = OptionParser.new do |opts|
 
   opts.on('-k', '--key KEY', 'AWS key used to delete files') { |v| options[:key] = v }
   opts.on('-s', '--secret SECRET', 'AWS secret used to delete files') { |v| options[:secret] = v }
-  opts.on('-r', '--region REGION', 'AWS S3 region used') { |v| options[:region] = v }
-  opts.on('-b', '--bucket BUCKET', 'AWS bucket name') { |v| options[:bucket] = v }
+  opts.on('-r', '--region REGION', 'AWS S3 region used to delete files') { |v| options[:region] = v }
+  opts.on('-b', '--bucket BUCKET', 'AWS bucket name used to delete files') { |v| options[:bucket] = v }
   opts.on('-t', '--threshold MUL', "Update detection threshold in segments time (default = #{options[:error_threshold]})") { |v| options[:error_treshold] = v }
 
   #Optional

@@ -501,7 +501,7 @@ while exit == false
       dst_file_name = dst_local_path + options[:prepend_id].to_s + File.join(File.dirname(tmp), File.basename(tmp)).to_s
       transfer(options[:dest_type], playlist_manifest_file[:local_path], dst_file_name, options[:dest_options], options[:cache_max_age_manifest], true)
 
-      if !options[:prepend_id].nil? && !options[:prepend_backup_id].nil?
+      if !options[:prepend_id].nil? && !options[:prepend_backup_id].nil? && options[:dest_options][:bucket_backup].nil?
         #Create the main playlist with redundant streams & upload it
         master_playlist_local_file_name = File.join(options[:local_tmp_path], File.basename(playlist_manifest_file[:local_path]))
 
@@ -516,12 +516,12 @@ while exit == false
         transfer(options[:dest_type], master_playlist_local_file_name, master_playlist_remote_file_name, options[:dest_options], options[:cache_max_age_manifest], false)
       end
 
-      if options[:dest_options][:bucket_backup]
+      if options[:dest_options][:bucket_backup] && options[:prepend_id] && options[:prepend_backup_id]
         #Create the main playlist with redundant streams & upload it
         master_playlist_local_file_name_backup =  File.join(File.dirname(playlist_manifest_file[:local_path]), "#{File.basename(playlist_manifest_file[:local_path], ".*")}_redundant.m3u8").to_s
 
-        prepend_local = options[:dest_options][:schema].to_s + "://s3-" + options[:dest_options][:region].to_s + ".amazonaws.com/" + options[:dest_options][:bucket].to_s + "/" + File.dirname(tmp).to_s + "/"
-        prepend_bck = options[:dest_options][:schema].to_s + "://s3-" + options[:dest_options][:region].to_s + ".amazonaws.com/" + options[:dest_options][:bucket_backup].to_s + "/" + File.dirname(tmp).to_s + "/"
+        prepend_local = options[:dest_options][:schema].to_s + "://s3-" + options[:dest_options][:region].to_s + ".amazonaws.com/" + options[:dest_options][:bucket].to_s + "/" + options[:prepend_id] + File.dirname(tmp).to_s + "/"
+        prepend_bck = options[:dest_options][:schema].to_s + "://s3-" + options[:dest_options][:region].to_s + ".amazonaws.com/" + options[:dest_options][:bucket_backup].to_s + "/" + options[:prepend_backup_id]+ File.dirname(tmp).to_s + "/"
 
         create_master_manifest_redundant_streams(playlist_manifest_file[:local_path], master_playlist_local_file_name_backup, prepend_local, prepend_bck)
 
