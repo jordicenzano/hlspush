@@ -250,6 +250,7 @@ def create_master_manifest_redundant_streams(manifest_source_file, manifest_dest
   File.open(manifest_dest_file, 'w') do |f_write|
     File.open(manifest_source_file, 'r') do |f_read|
       while strline = f_read.gets
+        puts "Line: #{strline}"
         datainf = strline.scan(/^#EXT-X-STREAM-INF:/)
         if !datainf.empty?
           while strlinem3u8 = f_read.gets
@@ -257,13 +258,13 @@ def create_master_manifest_redundant_streams(manifest_source_file, manifest_dest
             if !datam3u8.empty?
               f_write.puts strline
 
-              strlinem3u8_local = strlinem3u8
+              strlinem3u8_local = local_prepend_id.to_s + strlinem3u8
               f_write.puts strlinem3u8_local
 
               #Bck
               f_write.puts strline
 
-              strlinem3u8_bck = "../../" + backup_prepend_id.to_s + strlinem3u8
+              strlinem3u8_bck = backup_prepend_id.to_s + strlinem3u8
               f_write.puts strlinem3u8_bck
               break
             end
@@ -277,10 +278,18 @@ def create_master_manifest_redundant_streams(manifest_source_file, manifest_dest
 
 end
 
+def get_backup_bucket (dest_options)
+  if dest_options[:bucket_backup].nil?
+    dest_options[:bucket]
+  else
+    dest_options[:bucket_backup]
+  end
+end
+
 # START SCRIPT ***********************
 
 #Parse args
-aws_options = {:key => nil, :secret => nil, :region => nil, :bucket =>nil}
+aws_options = {:key => nil, :secret => nil, :region => nil, :bucket =>nil, :bucket_backup => nil, :schema => 'http'}
 local_options = {:path => nil}
 
 options = {:source_url => nil, :local_tmp_path => nil, :dest_type => 's3', :dest_options => aws_options, :uid =>nil, :prepend_id => nil, :prepend_backup_id => nil, :skip_upload_file => nil, :overwrite => false, :cache_max_age_manifest => 1, :cache_max_age_segments => 3600}
@@ -308,7 +317,7 @@ optparse = OptionParser.new do |opts|
   opts.on('-k', '--key KEY', 'AWS key') { |v| options[:dest_options][:key] = v }
   opts.on('-s', '--secret SECRET', 'AWS secret') { |v| options[:dest_options][:secret] = v }
   opts.on('-r', '--region REGION', 'AWS S3 region to upload the files') { |v| options[:dest_options][:region] = v }
-  opts.on('-b', '--bucket BUCKET', 'AWS destination bucket name') { |v| options[:dest_options][:bucket] = v }
+  opts.on('-b', '--bucket primary BUCKET', 'AWS destination primary bucket name') { |v| options[:dest_options][:bucket] = v }
 
   #General optional
   opts.on('-i', '--uid id ID', 'Unique ID to for segment files') { |v| options[:uid] = v }
@@ -321,6 +330,9 @@ optparse = OptionParser.new do |opts|
 
   #Options to check the "backup" upload (from its own point of view the "other" is always backup)
   opts.on('-q', '--prepend_backup_id pID', 'Prepend id of the backup upload') { |v| options[:prepend_backup_id] = v }
+  opts.on('-x', '--bucket secondary BUCKET', 'AWS destination secondary bucket name') { |v| options[:dest_options][:bucket_backup] = v }
+  opts.on('-c', '--schema SCHEMA', 'Schema to use to create the redundant manifest: http or https (Default = http)') { |v| options[:dest_options][:schema] = v }
+
 end
 
 #Check parameters
@@ -497,7 +509,6 @@ while exit == false
         prepend_local = dst_local_path + options[:prepend_id].to_s + File.dirname(tmp).to_s + "/"
         prepend_bck = dst_local_path + options[:prepend_backup_id].to_s + File.dirname(tmp).to_s + "/"
 
-        #TODO: Create absolute URLs
         create_master_manifest_redundant_streams(playlist_manifest_file[:local_path], master_playlist_local_file_name, prepend_local, prepend_bck)
 
         #Upload the main playlist with redundant streams
@@ -505,7 +516,21 @@ while exit == false
         transfer(options[:dest_type], master_playlist_local_file_name, master_playlist_remote_file_name, options[:dest_options], options[:cache_max_age_manifest], false)
       end
 
-      uploaded_playlist_manifest = true
+      if options[:dest_options][:bucket_backup]
+        #Create the main playlist with redundant streams & upload it
+        master_playlist_local_file_name_backup =  File.join(File.dirname(playlist_manifest_file[:local_path]), "#{File.basename(playlist_manifest_file[:local_path], ".*")}_redundant.m3u8").to_s
+
+        prepend_local = options[:dest_options][:schema].to_s + "://s3-" + options[:dest_options][:region].to_s + ".amazonaws.com/" + options[:dest_options][:bucket].to_s + "/" + File.dirname(tmp).to_s + "/"
+        prepend_bck = options[:dest_options][:schema].to_s + "://s3-" + options[:dest_options][:region].to_s + ".amazonaws.com/" + options[:dest_options][:bucket_backup].to_s + "/" + File.dirname(tmp).to_s + "/"
+
+        create_master_manifest_redundant_streams(playlist_manifest_file[:local_path], master_playlist_local_file_name_backup, prepend_local, prepend_bck)
+
+        #Upload the main playlist with redundant streams
+        master_playlist_remote_file_name = File.join(File.dirname(tmp), "#{File.basename(tmp, ".*")}_redundant.m3u8").to_s
+        transfer(options[:dest_type], master_playlist_local_file_name_backup, master_playlist_remote_file_name, options[:dest_options], options[:cache_max_age_manifest], false)
+      end
+
+        uploaded_playlist_manifest = true
     end
 
     loop_time_secs = Time.now.to_f - time_start
