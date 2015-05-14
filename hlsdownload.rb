@@ -250,7 +250,6 @@ def create_master_manifest_redundant_streams(manifest_source_file, manifest_dest
   File.open(manifest_dest_file, 'w') do |f_write|
     File.open(manifest_source_file, 'r') do |f_read|
       while strline = f_read.gets
-        puts "Line: #{strline}"
         datainf = strline.scan(/^#EXT-X-STREAM-INF:/)
         if !datainf.empty?
           while strlinem3u8 = f_read.gets
@@ -525,8 +524,10 @@ while exit == false
 
         create_master_manifest_redundant_streams(playlist_manifest_file[:local_path], master_playlist_local_file_name_backup, prepend_local, prepend_bck)
 
+        tmp = get_relative_path(options[:local_tmp_path], playlist_manifest_file[:local_path])
+
         #Upload the main playlist with redundant streams
-        master_playlist_remote_file_name = File.join(File.dirname(tmp), "#{File.basename(tmp, ".*")}_redundant.m3u8").to_s
+        master_playlist_remote_file_name = options[:prepend_id].to_s + File.join(File.dirname(tmp), "#{File.basename(tmp, ".*")}_redundant.m3u8").to_s
         transfer(options[:dest_type], master_playlist_local_file_name_backup, master_playlist_remote_file_name, options[:dest_options], options[:cache_max_age_manifest], false)
       end
 
