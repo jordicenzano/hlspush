@@ -1,4 +1,3 @@
 Compute the detection threshold based on chunk duration & window duration
 Add new parameter that identifies master, in order to create the master playlist int the correct order (not necessary if we think in A/B)
 Extract the generation of main playlist and health checking to other service
-I added something
