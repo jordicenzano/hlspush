@@ -30,17 +30,21 @@ def download_file(url, local_path, skip_if_file_exists_in_dest = false)
     IO.copy_stream(download, local_file_path)
     downloaded = true
 
-    log(:info, "Downloaded #{local_file_path} from #{url}")
+    log(:debug, "Downloaded #{local_file_path} from #{url}")
   else
-    log(:info, "Skipped download #{local_file_path} from #{url}")
+    log(:debug, "Skipped download #{local_file_path} from #{url}")
   end
 
   {:local_path => local_file_path, :url_source => url, :downloaded => downloaded}
 end
 
 def log(type, str)
-  time = Time.now
-  puts "[#{time.strftime("%Y-%m-%d %H:%M:%S.%L")}] #{type.to_s.upcase} - #{str}"
+
+  if (@verbose_level.to_i == 2) || (@verbose_level.to_i == 1 && (type == :info || type == :error))
+    time = Time.now
+    puts "[#{time.strftime("%Y-%m-%d %H:%M:%S.%L")}] #{type.to_s.upcase} - #{str}"
+  end
+
 end
 
 def get_renditions_manifests_urls(parent_manifest_file)
@@ -113,7 +117,7 @@ def copy_file(file_specs, options, skip_if_file_exists_in_dest)
     log(:info, "Copied file #{source} to #{dest}.")
     "COPIED"
   else
-    log(:info, "Copy file SKIPPED from #{source} to #{dest}.")
+    log(:debug, "Copy file SKIPPED from #{source} to #{dest}.")
     "SKIPPED"
   end
 
@@ -161,7 +165,7 @@ def s3_upload(file_specs, options, skip_if_file_exists_in_dest)
     if bucket.files.head(dest_path) != nil
       #File exists in destination
       do_upload = false
-      log(:info,"Skipped upload of file #{source} to bucket #{options[:dest_options][:bucket]}/#{dest_path}.")
+      log(:debug,"Skipped upload of file #{source} to bucket #{options[:dest_options][:bucket]}/#{dest_path}.")
     end
   end
 
@@ -262,13 +266,13 @@ def create_master_manifest_redundant_streams_cf(playlist_manifest, options)
               f_write.puts strline
 
               #Main
-              strlinem3u8_local = options[:dest_options][:schema] + "://" + options[:dest_options][:cf_dist] + "/" + options[:dest_options][:bucket] + "/" + File.join(get_path_from_url(playlist_manifest[:url_source], options[:prepend_id]), strlinem3u8)
+              strlinem3u8_local = options[:dest_options][:schema] + "://" + options[:dest_options][:cf_dist] + "/" + File.join(get_path_from_url(playlist_manifest[:url_source], options[:prepend_id]), strlinem3u8)
               f_write.puts strlinem3u8_local
 
               #Failover
               f_write.puts strline
 
-              strlinem3u8_bck = options[:dest_options][:schema] + "://" + options[:dest_options][:cf_dist] + "/" + options[:dest_options][:bucket_backup] + "/" + File.join(get_path_from_url(playlist_manifest[:url_source], options[:prepend_backup_id]), strlinem3u8)
+              strlinem3u8_bck = options[:dest_options][:schema] + "://" + options[:dest_options][:cf_dist] + "/" + File.join(get_path_from_url(playlist_manifest[:url_source], options[:prepend_backup_id]), strlinem3u8)
               f_write.puts strlinem3u8_bck
               break
             end
@@ -285,6 +289,8 @@ end
 # START SCRIPT ***********************
 
 #Parse args
+@verbose_level = 1
+
 aws_options = {:key => nil, :secret => nil, :region => nil, :bucket =>nil, :bucket_backup => nil, :schema => 'http'}
 local_options = {:path => nil}
 
@@ -332,8 +338,9 @@ optparse = OptionParser.new do |opts|
   opts.on('-q', '--prepend_backup_id pID', 'Prepend id of the backup upload') { |v| options[:prepend_backup_id] = v }
   opts.on('-x', '--bucket backup BUCKET', 'AWS destination backup bucket name') { |v| options[:dest_options][:bucket_backup] = v }
   opts.on('-c', '--schema SCHEMA', 'Schema to use to create the redundant manifest: http or https (Default = http)') { |v| options[:dest_options][:schema] = v }
-  opts.on('-v', '--cfdist CFDISTNAME', 'Cloudfront distribuiton domain name used to create redundant streams manifest') { |v| options[:dest_options][:cf_dist] = v }
+  opts.on('-f', '--cfdist CFDISTNAME', 'Cloudfront distribuiton domain name used to create redundant streams manifest') { |v| options[:dest_options][:cf_dist] = v }
 
+  opts.on('-v', '--verbose NUM', 'Verbose options (1 = errors & main info (default), 2-debug') { |v| @verbose_level = v }
 end
 
 #Check parameters
@@ -369,8 +376,9 @@ rescue OptionParser::InvalidOption, OptionParser::MissingArgument
   puts optparse
 end
 
+puts "JOC"
 #Show readed options
-log("info", "Read parameters: #{options.inspect}")
+log(:info, "Read parameters: #{options.inspect}")
 
 #prepend_id
 #Prepend to the "prepend_id" to the upload path
@@ -390,12 +398,6 @@ upload_enabled = true
 loop_time_max_secs = 0.5
 
 @app_fog_options = {:fog_mutex => Mutex.new, :fog_connection => nil, :fog_bucket => nil}
-
-#TO DEL Parse the url source path
-#options[:source_url] = http://52.8.150.242/liveorigin/ngrp:stream20150514002_all/playlist.m3u8
-#src_uri = URI.parse(options[:source_url])
-#source_url_parsed = {:scheme => src_uri.scheme, :host => src_uri.host, :path => File.dirname(src_uri.path), :file_without_ext => File.basename(src_uri.path,".*"), :ext => File.extname(src_uri.path)}
-#options[:source_url_parsed] = source_url_parsed
 
 while exit == false
   begin
@@ -471,7 +473,7 @@ while exit == false
 
     loop_time_secs = Time.now.to_f - time_start
     sleep_secs = [loop_time_max_secs - loop_time_secs, 0.01].max
-    log(:debug, "Process loop time: #{loop_time_secs}s, next sleep #{sleep_secs}")
+    log(:info, "Process loop time: #{loop_time_secs}s, next sleep #{sleep_secs}")
 
     sleep (sleep_secs)
 
