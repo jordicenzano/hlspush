@@ -35,6 +35,8 @@ cred
 
 #Local tests dir
 localtest
+test
+
 
 #test filke
 skip_upload
