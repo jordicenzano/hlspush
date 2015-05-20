@@ -408,7 +408,7 @@ while exit == false
     rendition_threads = Array.new
     renditions_manifests_urls.each do |rendition_manifest_url|
       #Download files, upload them, and clean
-      rendition_threads << Thread.new{process_rendition(rendition_manifest_url, options, upload_enabled )}
+      rendition_threads << Thread.new{process_rendition(rendition_manifest_url, options, first_upload_after_activation, upload_enabled )}
     end
 
     #Wait all segments and chunklists to uplaod
