@@ -187,6 +187,7 @@ def process_rendition(rendition_manifest_url, options, first_upload_after_activa
   renditions_segments = get_absolute_urls(get_segments_from_manifests(rendition_manifest[:local_path]), rendition_manifest_url)
 
   #For every segment...
+  upload_chunklist = false
   renditions_segments.each do |segment|
     #download segments
     local_segment = download_file(segment, get_path_from_url(segment, options[:local_tmp_path]), true)
@@ -197,11 +198,12 @@ def process_rendition(rendition_manifest_url, options, first_upload_after_activa
       if local_segment[:downloaded] == true || first_upload_after_activation == true
        #Upload new rendition
        upload_file(local_segment, options, true)
+       upload_chunklist = true
       end
     end
   end
 
-  if upload_on == true
+  if upload_on == true && (first_upload_after_activation == true || upload_chunklist == true)
     #Upload chunklist
     upload_file(rendition_manifest, options, false)
   end
@@ -376,7 +378,6 @@ rescue OptionParser::InvalidOption, OptionParser::MissingArgument
   puts optparse
 end
 
-puts "JOC"
 #Show readed options
 log(:info, "Read parameters: #{options.inspect}")
 
