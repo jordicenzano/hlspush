@@ -119,10 +119,35 @@ def copy_file(file_specs, options, skip_if_file_exists_in_dest)
 
 end
 
-def s3_upload(file_specs, options, skip_if_file_exists_in_dest)
+def fog_connection(options)
   fog_options = {:provider => 'AWS', :aws_access_key_id => options[:dest_options][:key], :aws_secret_access_key => options[:dest_options][:secret], :region => options[:dest_options][:region]}
 
-  connection = Fog::Storage.new(fog_options)
+  @app_fog_options[:fog_mutex].synchronize {
+    # access shared resource
+     if @app_fog_options[:fog_connection].nil? || @app_fog_options[:fog_bucket].nil?
+       log(:info, "Establishing S3 connection")
+       @app_fog_options[:fog_connection] = Fog::Storage.new(fog_options)
+       @app_fog_options[:fog_bucket] = @app_fog_options[:fog_connection].directories.get(options[:dest_options][:bucket])
+       log(:info, "Established S3 connection")
+     end
+  }
+
+  @app_fog_options[:fog_bucket]
+end
+
+def fog_reset
+    @app_fog_options[:fog_mutex].synchronize {
+    @app_fog_options[:fog_connection] = nil
+    @app_fog_options[:fog_bucket] = nil
+  }
+end
+
+def s3_upload(file_specs, options, skip_if_file_exists_in_dest)
+  #fog_options = {:provider => 'AWS', :aws_access_key_id => options[:dest_options][:key], :aws_secret_access_key => options[:dest_options][:secret], :region => options[:dest_options][:region]}
+  #connection = Fog::Storage.new(fog_options)
+  #bucket = connection.directories.get(options[:dest_options][:bucket])
+
+  bucket = fog_connection(options)
 
   source = file_specs[:local_path]
   dest_path = File.join(get_path_from_url(file_specs[:url_source], options[:prepend_id]), File.basename(file_specs[:local_path]))
@@ -130,7 +155,6 @@ def s3_upload(file_specs, options, skip_if_file_exists_in_dest)
     dest_path = dest_path[1..(dest_path.length-1)]
   end
   cache_control_max_age = file_specs[:cache_max_age]
-  bucket = connection.directories.get(options[:dest_options][:bucket])
 
   do_upload = true
   if skip_if_file_exists_in_dest == true
@@ -365,6 +389,8 @@ upload_enabled = true
 
 loop_time_max_secs = 0.5
 
+@app_fog_options = {:fog_mutex => Mutex.new, :fog_connection => nil, :fog_bucket => nil}
+
 #TO DEL Parse the url source path
 #options[:source_url] = http://52.8.150.242/liveorigin/ngrp:stream20150514002_all/playlist.m3u8
 #src_uri = URI.parse(options[:source_url])
@@ -453,6 +479,9 @@ while exit == false
     exit = true
     log(:info, "Captured SIGINT / SIGTERM, exiting...")
   rescue Exception => e
+    #Reset connection parameters, this will force a reconnection
+    fog_reset
+
     log(:error, "Error: #{e.message}, #{e.backtrace}")
   end
 end
