@@ -359,6 +359,7 @@ log("info", "Read parameters: #{options.inspect}")
 #Control vars
 exit = false
 uploaded_playlist_manifest = false
+first_upload_after_activation = true
 disable_upload = false
 upload_enabled = true
 
@@ -439,6 +440,8 @@ while exit == false
       end
       uploaded_playlist_manifest = true
     end
+
+    first_upload_after_activation = false
 
     loop_time_secs = Time.now.to_f - time_start
     sleep_secs = [loop_time_max_secs - loop_time_secs, 0.01].max
