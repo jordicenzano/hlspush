@@ -391,6 +391,7 @@ log(:info, "Read parameters: #{options.inspect}")
 
 #Control vars
 exit = false
+populated_playlist_manifest = false
 uploaded_playlist_manifest = false
 first_upload_after_activation = true
 disable_upload = false
@@ -438,6 +439,7 @@ while exit == false
     renditions_manifests_urls.each do |rendition_manifest_url|
       #Download files, upload them, and clean
       rendition_threads << Thread.new{process_rendition(rendition_manifest_url, options, first_upload_after_activation, upload_enabled )}
+      populated_playlist_manifest = true
     end
 
     #Wait all segments and chunklists to uplaod
@@ -446,7 +448,7 @@ while exit == false
     end
 
     #Upload master playlist and generate redundant
-    if uploaded_playlist_manifest == false && upload_enabled == true
+    if populated_playlist_manifest == true && uploaded_playlist_manifest == false && upload_enabled == true
       #Upload simple playlist manifest
       upload_file(playlist_manifest, options, false)
 
