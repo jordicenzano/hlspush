@@ -15,48 +15,55 @@ fi
 
 source ./cred/live_config.cfg
 
-#Server A
-ssh -t -t -i ./cred/newlivetestJordi.pem ec2-user@"$REMOTE_IP_A" << ENDSSH
-    cd /home/ec2-user/hlspush
+stop_remote()
+{
+REMOTE_IP=$1
 
-    ps aux | grep $STREAMNAME | grep hlsdownload.rb | grep -v grep | awk '{print \$2};' | xargs kill -9 >/dev/null 2>&1
-    rm -f ./running/hlsdownload/$STREAMNAME
-    ps aux | grep $STREAMNAME | grep hlslivehealth.rb | grep -v grep | awk '{print \$2};' | xargs kill -9 >/dev/null 2>&1
-    rm -f ./running/hlshealth/$STREAMNAME
+ssh -i ./cred/newlivetestJordi.pem ec2-user@$REMOTE_IP << EOF
+cd /home/ec2-user/hlspush
 
-    #Clean up section
-    rm -r -f ./localtest/$STREAMNAME
-    #rm -f skip_upload
-    rm -f ./log/$STREAMNAME*
+#Kill processes related to this stream
+ps aux | grep $STREAMNAME | grep hlsdownload.rb | grep -v grep | awk "{print \$2};" | xargs kill -9 >/dev/null 2>&1
+rm -f ./running/hlsdownload/$STREAMNAME
+ps aux | grep $STREAMNAME | grep hlslivehealth.rb | grep -v grep | awk "{print \$2};" | xargs kill -9 >/dev/null 2>&1
+rm -f ./running/hlshealth/$STREAMNAME
 
-    exit
-ENDSSH
+#Clean up section
+rm -r -f ./localtest/$STREAMNAME
+#rm -f skip_upload
+rm -f ./log/$STREAMNAME*
 
-#Kill previous processes related to the same stream
-ps aux | grep $STREAMNAME | grep ffmpeg | grep $REMOTE_IP_A |grep -v grep | awk '{print $2};' | xargs kill -9 >/dev/null 2>&1
+exit
+EOF
+}
+
+stop_local()
+{
+REMOTE_IP=$1
+
+#Kill local processes related to this stream
+ps aux | grep $STREAMNAME | grep ffmpeg | grep $REMOTE_IP |grep -v grep | awk "{print $2};" | xargs kill -9 >/dev/null 2>&1
+}
+
+# START SCRIPT *************************************
+
+#Stop wowza processes in server A
+stop_remote $REMOTE_IP_A
+
+#Srop publisher to A
+stop_local $REMOTE_IP_A
 
 #Server B
 if [ -n "$REMOTE_IP_B" ]; then
-    ssh -t -t -i ./cred/newlivetestJordi.pem ec2-user@"$REMOTE_IP_B" << ENDSSH1
-        cd /home/ec2-user/hlspush
 
-        ps aux | grep $STREAMNAME | grep hlsdownload.rb | grep -v grep | awk '{print \$2};' | xargs kill -9 >/dev/null 2>&1
-        rm -f ./running/hlsdownload/$STREAMNAME
-        ps aux | grep $STREAMNAME | grep hlslivehealth.rb | grep -v grep | awk '{print \$2};' | xargs kill -9 >/dev/null 2>&1
-        rm -f ./running/hlshealth/$STREAMNAME
+    #Stop wowza processes in server B
+    stop_remote $REMOTE_IP_B
 
-        #Clean up section
-        rm -r -f ./localtest/$STREAMNAME
-        #rm -f skip_upload
-        rm -f ./log/$STREAMNAME*
-
-        exit
-    ENDSSH1
-
-    #Kill previous processes related to the same stream
-    ps aux | grep $STREAMNAME | grep ffmpeg | grep $REMOTE_IP_B |grep -v grep | awk '{print $2};' | xargs kill -9 >/dev/null 2>&1
+    #Stop publisher to B
+    stop_local $REMOTE_IP_B
 
 else
-    echo "No failover server configured"
+    echo "$(tput setaf 1)No failover server configured"
 fi
-echo "Streamname: $STREAMNAME killed"
+
+echo "$(tput setaf 2)Finished OK. Streamname: $STREAMNAME"

@@ -35,71 +35,72 @@ fi
 
 source ./cred/live_config.cfg
 
-#Server A
-ssh -t -t -i ./cred/newlivetestJordi.pem ec2-user@"$REMOTE_IP_A" << ENDSSH
-    cd /home/ec2-user/hlspush
+start_remote()
+{
+REMOTE_IP=$1
+LOCAL_S3_BUCKET_MAIN=$2
+LOCAL_S3_BUCKET_BCK=$3
+PREFIX_MAIN=$4
+PREFIX_BCK=$5
 
-    #Kill previous processes related to the same stream
-    ps aux | grep $STREAMNAME | grep hlsdownload.rb | grep -v grep | awk '{print \$2};' | xargs kill -9 >/dev/null 2>&1
-    rm -f ./running/hlsdownload/$STREAMNAME
-    ps aux | grep $STREAMNAME | grep hlslivehealth.rb | grep -v grep | awk '{print \$2};' | xargs kill -9 >/dev/null 2>&1
-    rm -f ./running/hlshealth/$STREAMNAME
-
-    Clean up section
-    rm -r -f ./localtest/$STREAMNAME
-    #rm -f skip_upload
-    rm -f ./log/$STREAMNAME*
-
-    #Run hls push process
-    nohup ./hlsdownload.rb -d s3 -u "http://localhost:1935/"$APP_NAME"/ngrp:"$STREAMNAME"_all/playlist.m3u8" -l "./localtest/$STREAMNAME" -k "$S3KEY" -s "$S3SECRET" -r "$S3REGION" -b "$S3BUCKET" -m "$CACHECONTROL_CHUNKLISTS_S" -t "$CACHE_CONTROL_SEGMENTS_S" -y "$CACHECONTROL_MANIFESTS_S" -j "./skip_upload" -x "$S3BUCKET_BACKUP" -c "$ACCESS_SCHEMA" -p A -q B -f "$CLOUDFRONT_DIST" -v 1> ./log/"$STREAMNAME"_push.log 2>&1 < /dev/null &
-    touch ./running/hlsdownload/$STREAMNAME
-
-    #Run hls health process
-    nohup ./hlslivehealth.rb -u ""$ACCESS_SCHEMA"://s3-"$S3REGION".amazonaws.com/"$S3BUCKET_BACKUP"/"$APP_NAME"/ngrp:"$STREAMNAME"_all/playlist.m3u8" -k "$S3KEY" -s "$S3SECRET" -r "$S3REGION" -f $SEGMENT_FAILURE_DETECTION_TRESHOLD > ./log/"$STREAMNAME"_health.log 2>&1 < /dev/null &
-    touch ./running/hlshealth/$STREAMNAME
-
-    exit
-ENDSSH
+ssh -i ./cred/newlivetestJordi.pem ec2-user@$REMOTE_IP << EOF
+cd /home/ec2-user/hlspush
 
 #Kill previous processes related to the same stream
-ps aux | grep $STREAMNAME | grep ffmpeg | grep $REMOTE_IP_A |grep -v grep | awk '{print $2};' | xargs kill -9 >/dev/null 2>&1
+ps aux | grep $STREAMNAME | grep hlsdownload.rb | grep -v grep | awk "{print \$2};" | xargs kill -9 >/dev/null 2>&1
+rm -f ./running/hlsdownload/$STREAMNAME
+ps aux | grep $STREAMNAME | grep hlslivehealth.rb | grep -v grep | awk "{print \$2};" | xargs kill -9 >/dev/null 2>&1
+rm -f ./running/hlshealth/$STREAMNAME
+
+#Clean up section
+rm -r -f ./localtest/$STREAMNAME
+#rm -f skip_upload
+rm -f ./log/$STREAMNAME*
+
+#Run hls push process
+nohup ./hlsdownload.rb -d s3 -u "http://localhost:1935/$APP_NAME/ngrp:"$STREAMNAME"_all/playlist.m3u8" -l "./localtest/$STREAMNAME" -k "$S3KEY" -s "$S3SECRET" -r "$S3REGION" -b "$LOCAL_S3_BUCKET_MAIN" -m $CACHECONTROL_CHUNKLISTS_S -t $CACHE_CONTROL_SEGMENTS_S -y $CACHECONTROL_MANIFESTS_S -j "./skip_upload" -x "$LOCAL_S3_BUCKET_BCK" -c "$ACCESS_SCHEMA" -p $PREFIX_MAIN -q $PREFIX_BCK -f "$CLOUDFRONT_DIST" -v 1 > ./log/"$STREAMNAME"_push.log 2>&1 < /dev/null &
+touch ./running/hlsdownload/$STREAMNAME
+
+#Run hls health process
+nohup ./hlslivehealth.rb -u "$ACCESS_SCHEMA://s3-$S3REGION.amazonaws.com/$LOCAL_S3_BUCKET_BCK/$APP_NAME/ngrp:"$STREAMNAME"_all/playlist.m3u8" -k "$S3KEY" -s "$S3SECRET" -r "./hlslivehealth.rb -u "$ACCESS_SCHEMA://s3-$S3REGION.amazonaws.com/$LOCAL_S3_BUCKET_BCK/$APP_NAME/ngrp:"$STREAMNAME"_all/playlist.m3u8" -k "$S3KEY" -s "$S3SECRET" -r "$S3REGION" -t $SEGMENT_FAILURE_DETECTION_TRESHOLD > ./log/"$STREAMNAME"_health.log 2>&1 < /dev/null &" -t $SEGMENT_FAILURE_DETECTION_TRESHOLD > ./log/"$STREAMNAME"_health.log 2>&1 < /dev/null &
+touch ./running/hlshealth/$STREAMNAME
+
+exit
+EOF
+}
+
+start_local()
+{
+REMOTE_IP=$1
+LOG_SUFFIX=$2
+
+#Kill local previous processes related to the same stream
+ps aux | grep $STREAMNAME | grep ffmpeg | grep $REMOTE_IP |grep -v grep | awk '{print $2};' | xargs kill -9 >/dev/null 2>&1
 
 #Publish stream to A
-echo "Running ffmpeg to wowza A, logs in ./log/ffmpegA"
-ffmpeg -f lavfi -re -i testsrc=duration=36000:size=320x250:rate=25 -f lavfi -re -i "sine=frequency=1000:duration=36000:sample_rate=44100" -i ./pictures/p.png -filter_complex 'overlay=10:main_h-overlay_h-10' -pix_fmt yuv420p -c:v libx264 -b:v 500k -g 25 -profile:v baseline -preset veryfast -c:a libfaac -b:a 96k -f flv "rtmp://$WOWZA_PUBLISHING_USER:$WOWZA_PUBLISHING_PASS@$REMOTE_IP_A:1935/liveorigin/$STREAMNAME" > ./log/"$STREAMNAME"_ffmpegA.log 2> ./log/"$STREAMNAME"_ffmpegA_err.log &
+echo "$(tput setaf 2)Running ffmpeg to wowza A, logs in ./log/"$STREAMNAME"_ffmpegA"
+ffmpeg -f lavfi -re -i testsrc=duration=36000:size=320x250:rate=25 -f lavfi -re -i "sine=frequency=1000:duration=36000:sample_rate=44100" -i ./pictures/p.png -filter_complex 'overlay=10:main_h-overlay_h-10' -pix_fmt yuv420p -c:v libx264 -b:v 500k -g 25 -profile:v baseline -preset veryfast -c:a libfaac -b:a 96k -f flv "rtmp://$WOWZA_PUBLISHING_USER:$WOWZA_PUBLISHING_PASS@$REMOTE_IP:1935/liveorigin/$STREAMNAME" > ./log/"$STREAMNAME"_ffmpeg"$LOG_SUFFIX".log 2> ./log/"$STREAMNAME"_ffmpeg"$LOG_SUFFIX"_err.log &
+}
+
+
+# START SCRIPT *************************************
+
+#Server wowza processes in server A
+start_remote $REMOTE_IP_A $S3BUCKET $S3BUCKET_BACKUP "A" "B"
+
+#Start publisher to A
+start_local $REMOTE_IP_A "A"
 
 #Server B
 if [ -n "$REMOTE_IP_B" ]; then
-    ssh -t -t -i ./cred/newlivetestJordi.pem ec2-user@"$REMOTE_IP_B" << ENDSSH
-        cd /home/ec2-user/hlspush
 
-        ps aux | grep $STREAMNAME | grep hlsdownload.rb | grep -v grep | awk '{print \$2};' | xargs kill -9 >/dev/null 2>&1
-        rm -f ./running/hlsdownload/$STREAMNAME
-        ps aux | grep $STREAMNAME | grep hlslivehealth.rb | grep -v grep | awk '{print \$2};' | xargs kill -9 >/dev/null 2>&1
-        rm -f ./running/hlshealth/$STREAMNAME
+    #Server wowza processes in server B
+    start_remote $REMOTE_IP_B S3BUCKET_BACKUP S3BUCKET "B" "A"
 
-        Clean up section
-        rm -r -f ./localtest/$STREAMNAME
-        #rm -f skip_upload
-        rm -f ./log/$STREAMNAME*
-
-        nohup ./hlsdownload.rb -d s3 -u "http://localhost:1935/"$APP_NAME"/ngrp:"$STREAMNAME"_all/playlist.m3u8" -l "./localtest/$STREAMNAME" -k "$S3KEY" -s "$S3SECRET" -r "$S3REGION" -b "$S3BUCKET_BACKUP" -m "$CACHECONTROL_CHUNKLISTS_S" -t "$CACHE_CONTROL_SEGMENTS_S" -y "$CACHECONTROL_MANIFESTS_S" -j "./skip_upload" -x "$S3BUCKET" -c "$ACCESS_SCHEMA" -p B -q A -f "$CLOUDFRONT_DIST" -v 1> ./log/"$STREAMNAME"_push.log 2>&1 < /dev/null &
-        touch ./running/hlsdownload/$STREAMNAME
-
-        nohup ./hlslivehealth.rb -u ""$ACCESS_SCHEMA"://s3-"$S3REGION".amazonaws.com/"$S3BUCKET"/"$APP_NAME"/ngrp:"$STREAMNAME"_all/playlist.m3u8" -k "$S3KEY" -s "$S3SECRET" -r "$S3REGION" -f $SEGMENT_FAILURE_DETECTION_TRESHOLD > ./log/"$STREAMNAME"_health.log 2>&1 < /dev/null &
-        touch ./running/hlshealth/$STREAMNAME
-
-        exit
-    ENDSSH
-
-    #Kill previous processes related to the same stream
-    ps aux | grep $STREAMNAME | grep ffmpeg | grep $REMOTE_IP_A |grep -v grep | awk '{print $2};' | xargs kill -9 >/dev/null 2>&1
-
-    #Publish stream to B
-    echo "Running ffmpeg to wowza A, logs in ./log/ffmpegB"
-    ffmpeg -f lavfi -re -i testsrc=duration=36000:size=320x250:rate=25 -f lavfi -re -i "sine=frequency=1000:duration=36000:sample_rate=44100" -i ./pictures/b.png -filter_complex 'overlay=10:main_h-overlay_h-10' -pix_fmt yuv420p -c:v libx264 -b:v 500k -g 25 -profile:v baseline -preset veryfast -c:a libfaac -b:a 96k -f flv "rtmp://$WOWZA_PUBLISHING_USER:$WOWZA_PUBLISHING_PASS@$REMOTE_IP_B:1935/liveorigin/$STREAMNAME" > ./log/"$STREAMNAME"_ffmpegB.log 2> ./log/"$STREAMNAME"_ffmpegB_err.log &
-
+    #Start publisher to B
+    start_local $REMOTE_IP_B "B"
 else
-    echo "No failover server configured"
+    echo "$(tput setaf 1)No failover server configured"
 fi
-echo "Streamname: $STREAMNAME"
+
+echo "$(tput setaf 2)Finished OK. Streamname: $STREAMNAME"

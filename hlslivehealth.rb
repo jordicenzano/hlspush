@@ -164,7 +164,7 @@ end
 options = {:key => nil, :secret => nil, :region => nil, :bucket =>nil, :source_url => nil, :error_threshold => 1.5, :verbose => false}
 
 optparse = OptionParser.new do |opts|
-  opts.banner = "HLS live feed check health from S3 (by Jordi Cenzano)\nUsage: ./hlslivehealth -u \"https://s3-us-west-1.amazonaws.com/hls-origin/live/playlist.m3u8\" -k \"AGAGAGAGGAGAGU\" -s \"hajhjashjh&*kajskajs\" -r \"us-west-1\" -f 1.5"
+  opts.banner = "HLS live feed check health from S3 (by Jordi Cenzano)\nUsage: ./hlslivehealth -u \"https://s3-us-west-1.amazonaws.com/hls-origin/live/playlist.m3u8\" -k \"AGAGAGAGGAGAGU\" -s \"hajhjashjh&*kajskajs\" -r \"us-west-1\" -t 1.5"
   opts.on('-h', '--help', 'Displays help') do
     puts opts
     exit
