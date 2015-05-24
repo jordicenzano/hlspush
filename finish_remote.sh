@@ -30,7 +30,7 @@ rm -f ./running/hlshealth/$STREAMNAME
 
 #Clean up section
 rm -r -f ./localtest/$STREAMNAME
-#rm -f skip_upload
+rm -f skip_upload
 rm -f ./log/$STREAMNAME*
 
 exit
@@ -63,7 +63,7 @@ if [ -n "$REMOTE_IP_B" ]; then
     stop_local $REMOTE_IP_B
 
 else
-    echo "$(tput setaf 1)No failover server configured"
+    echo "$(tput setaf 1)No failover server configured$(tput sgr 0)"
 fi
 
-echo "$(tput setaf 2)Finished OK. Streamname: $STREAMNAME"
+echo "$(tput setaf 2)Finished OK. Streamname: $STREAMNAME$(tput sgr 0)"

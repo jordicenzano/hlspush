@@ -54,7 +54,7 @@ rm -f ./running/hlshealth/$STREAMNAME
 
 #Clean up section
 rm -r -f ./localtest/$STREAMNAME
-#rm -f skip_upload
+rm -f skip_upload
 rm -f ./log/$STREAMNAME*
 
 #Run hls push process
@@ -62,7 +62,7 @@ nohup ./hlsdownload.rb -d s3 -u "http://localhost:1935/$APP_NAME/ngrp:"$STREAMNA
 touch ./running/hlsdownload/$STREAMNAME
 
 #Run hls health process
-nohup ./hlslivehealth.rb -u "$ACCESS_SCHEMA://s3-$S3REGION.amazonaws.com/$LOCAL_S3_BUCKET_BCK/$APP_NAME/ngrp:"$STREAMNAME"_all/playlist.m3u8" -k "$S3KEY" -s "$S3SECRET" -r "./hlslivehealth.rb -u "$ACCESS_SCHEMA://s3-$S3REGION.amazonaws.com/$LOCAL_S3_BUCKET_BCK/$APP_NAME/ngrp:"$STREAMNAME"_all/playlist.m3u8" -k "$S3KEY" -s "$S3SECRET" -r "$S3REGION" -t $SEGMENT_FAILURE_DETECTION_TRESHOLD > ./log/"$STREAMNAME"_health.log 2>&1 < /dev/null &" -t $SEGMENT_FAILURE_DETECTION_TRESHOLD > ./log/"$STREAMNAME"_health.log 2>&1 < /dev/null &
+nohup ./hlslivehealth.rb -u "$ACCESS_SCHEMA://s3-$S3REGION.amazonaws.com/$LOCAL_S3_BUCKET_BCK/$PREFIX_BCK/$APP_NAME/ngrp:"$STREAMNAME"_all/playlist.m3u8" -k "$S3KEY" -s "$S3SECRET" -r "$S3REGION" -t $SEGMENT_FAILURE_DETECTION_TRESHOLD > ./log/"$STREAMNAME"_health.log 2>&1 < /dev/null &
 touch ./running/hlshealth/$STREAMNAME
 
 exit
@@ -78,8 +78,8 @@ LOG_SUFFIX=$2
 ps aux | grep $STREAMNAME | grep ffmpeg | grep $REMOTE_IP |grep -v grep | awk '{print $2};' | xargs kill -9 >/dev/null 2>&1
 
 #Publish stream to A
-echo "$(tput setaf 2)Running ffmpeg to wowza A, logs in ./log/"$STREAMNAME"_ffmpegA"
-ffmpeg -f lavfi -re -i testsrc=duration=36000:size=320x250:rate=25 -f lavfi -re -i "sine=frequency=1000:duration=36000:sample_rate=44100" -i ./pictures/p.png -filter_complex 'overlay=10:main_h-overlay_h-10' -pix_fmt yuv420p -c:v libx264 -b:v 500k -g 25 -profile:v baseline -preset veryfast -c:a libfaac -b:a 96k -f flv "rtmp://$WOWZA_PUBLISHING_USER:$WOWZA_PUBLISHING_PASS@$REMOTE_IP:1935/liveorigin/$STREAMNAME" > ./log/"$STREAMNAME"_ffmpeg"$LOG_SUFFIX".log 2> ./log/"$STREAMNAME"_ffmpeg"$LOG_SUFFIX"_err.log &
+echo "$(tput setaf 2)Running ffmpeg to wowza A, logs in ./log/"$STREAMNAME"_ffmpegA$(tput sgr 0)"
+ffmpeg -f lavfi -re -i testsrc=duration=36000:size=320x250:rate=25 -f lavfi -re -i "sine=frequency=1000:duration=36000:sample_rate=44100" -i ./pictures/$LOG_SUFFIX.png -filter_complex 'overlay=10:main_h-overlay_h-10' -pix_fmt yuv420p -c:v libx264 -b:v 500k -g 25 -profile:v baseline -preset veryfast -c:a libfaac -b:a 96k -f flv "rtmp://$WOWZA_PUBLISHING_USER:$WOWZA_PUBLISHING_PASS@$REMOTE_IP:1935/liveorigin/$STREAMNAME" > ./log/"$STREAMNAME"_ffmpeg"$LOG_SUFFIX".log 2> ./log/"$STREAMNAME"_ffmpeg"$LOG_SUFFIX"_err.log &
 }
 
 
@@ -95,12 +95,12 @@ start_local $REMOTE_IP_A "A"
 if [ -n "$REMOTE_IP_B" ]; then
 
     #Server wowza processes in server B
-    start_remote $REMOTE_IP_B S3BUCKET_BACKUP S3BUCKET "B" "A"
+    start_remote $REMOTE_IP_B $S3BUCKET_BACKUP $S3BUCKET "B" "A"
 
     #Start publisher to B
     start_local $REMOTE_IP_B "B"
 else
-    echo "$(tput setaf 1)No failover server configured"
+    echo "$(tput setaf 1)No failover server configured$(tput sgr 0)"
 fi
 
-echo "$(tput setaf 2)Finished OK. Streamname: $STREAMNAME"
+echo "$(tput setaf 2)Finished OK. Streamname: $STREAMNAME$(tput sgr 0)"

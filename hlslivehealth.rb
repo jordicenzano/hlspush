@@ -214,9 +214,9 @@ loop_time_max_secs = 1
 exit = false
 
 while exit == false
-  begin
-    time_start = Time.now.to_f
+  time_start = Time.now.to_f
 
+  begin
     if playlist_manifest_data.nil?
       #Download playlist manifest
       playlist_manifest_data = download_data(options[:source_url])
@@ -259,15 +259,17 @@ while exit == false
       s3_delete_files(chunklist_to_delete, options)
     end
 
-    loop_time_secs = Time.now.to_f - time_start
-    sleep_secs = [loop_time_max_secs - loop_time_secs, 0.01].max
-    log(:debug, "Process loop time: #{loop_time_secs}s, next sleep #{sleep_secs}")
-
-    sleep (sleep_secs)
   rescue SystemExit, Interrupt
     exit = true
     log(:info, "Captured SIGINT / SIGTERM, exiting...")
   rescue Exception => e
     log(:error, "#{e.message}, #{e.backtrace}", options[:verbose])
   end
+
+  loop_time_secs = Time.now.to_f - time_start
+  sleep_secs = [loop_time_max_secs - loop_time_secs, 0.01].max
+  log(:debug, "Process loop time: #{loop_time_secs}s, next sleep #{sleep_secs}")
+
+  sleep (sleep_secs)
+
 end

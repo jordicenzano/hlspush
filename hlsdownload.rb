@@ -402,9 +402,9 @@ loop_time_max_secs = 0.5
 @app_fog_options = {:fog_mutex => Mutex.new, :fog_connection => nil, :fog_bucket => nil}
 
 while exit == false
-  begin
-    time_start = Time.now.to_f
+  time_start = Time.now.to_f
 
+  begin
     #Check if s3 upload is disabled at every iteration
     if !options[:dest_options].nil?
       if !options[:skip_upload_file].nil?
@@ -473,13 +473,6 @@ while exit == false
     end
 
     first_upload_after_activation = false
-
-    loop_time_secs = Time.now.to_f - time_start
-    sleep_secs = [loop_time_max_secs - loop_time_secs, 0.01].max
-    log(:info, "Process loop time: #{loop_time_secs}s, next sleep #{sleep_secs}")
-
-    sleep (sleep_secs)
-
   rescue SystemExit, Interrupt
     exit = true
     log(:info, "Captured SIGINT / SIGTERM, exiting...")
@@ -489,4 +482,10 @@ while exit == false
 
     log(:error, "Error: #{e.message}, #{e.backtrace}")
   end
+
+  loop_time_secs = Time.now.to_f - time_start
+  sleep_secs = [loop_time_max_secs - loop_time_secs, 0.01].max
+  log(:info, "Process loop time: #{loop_time_secs}s, next sleep #{sleep_secs}")
+
+  sleep (sleep_secs)
 end
