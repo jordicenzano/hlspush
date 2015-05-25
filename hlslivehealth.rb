@@ -140,8 +140,8 @@ def set_chunklist_to_delete(chunklist_times)
   chunklist_to_delete = Array.new
   delete_element = nil
 
-  chunklist_times.each do |chunk_list|
-    if chunk_list[:healthy] == false
+  chunklist_times.each do |chunklist|
+    if chunklist[:healthy] == false
       delete_element = chunk_list
       log(:warning, "Detected error updating #{delete_element[:url]}, updated #{chunk_list[:secs_since_last_update]} secs ago")
       break
@@ -154,7 +154,7 @@ def set_chunklist_to_delete(chunklist_times)
     chunklist_times.each do |chunk_list|
       url_chunklist = URI(chunk_list[:url])
       if uri_delete.scheme == url_chunklist.scheme && uri_delete.host == url_chunklist.host && File.dirname(uri_delete.path) == File.dirname(url_chunklist.path)
-        chunk_list[:healthy] = true
+        chunk_list[:healthy] = false
         chunklist_to_delete << chunk_list
       else
         chunklist_to_delete << chunk_list
