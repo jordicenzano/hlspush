@@ -106,20 +106,20 @@ def s3_get_files_last_updated_time(file_url_list, options)
     if !file.nil?
       last_update = Time.now.to_f - file.last_modified.to_f
     end
-    file_list_last_updated_times << {:url => file_url, :secs_since_last_update => last_update }
+    file_list_last_updated_times << {:url => file_url, :secs_since_last_update => last_update, :delete => false}
   end
 
   file_list_last_updated_times
 end
 
-def s3_delete_files(files_url, options)
+def s3_delete_files(files_specs, options)
 
   fog_options = {:provider => 'AWS', :aws_access_key_id => options[:key], :aws_secret_access_key => options[:secret], :region => options[:region]}
   connection = Fog::Storage.new(fog_options)
   bucket = connection.directories.get(options[:bucket])
 
-  files_url.each do |file_url|
-    file_path = s3_get_path_from_url(file_url)
+  files_specs.each do |file|
+    file_path = s3_get_path_from_url(file[:url])
     file = bucket.files.get(file_path)
     if !file.nil?
       begin
@@ -150,12 +150,28 @@ def get_chunklist_to_delete(chunklist_times, update_treshold_secs)
     chunklist_times.each do |chunk_list|
       url_chunklist = URI(chunk_list[:url])
       if uri_delete.scheme == url_chunklist.scheme && uri_delete.host == url_chunklist.host && File.dirname(uri_delete.path) == File.dirname(url_chunklist.path)
-        chunklist_to_delete << url_chunklist.to_s
+        chunk_list[:delete] = true
+        chunklist_to_delete << chunk_list
+      else
+        chunklist_to_delete << chunk_list
       end
     end
   end
 
   chunklist_to_delete
+end
+
+def s3_send_report(dest_path, chunklist, segment_duration_secs, delete_chunklist_treshold_secs, report_update_secs, healthy, options)
+  if ((Time.now.to_i - @report_last_sent.to_i) > report_update_secs) || healthy == false
+    @report_last_sent = Time.now
+    report = {:healthy => healthy, :updated => @report_last_sent.to_i, :segment_duration_secs => segment_duration_secs, :delete_chunklist_treshold_secs => delete_chunklist_treshold_secs, :chunklist_data => chunklist}
+
+    fog_options = {:provider => 'AWS', :aws_access_key_id => options[:key], :aws_secret_access_key => options[:secret], :region => options[:region]}
+    connection = Fog::Storage.new(fog_options)
+    bucket = connection.directories.get(options[:bucket])
+
+    bucket.files.create(:key => File.join(dest_path, "health_report.json"), :body => report.to_json, :metadata => {}, :public => true )
+  end
 end
 
 # START SCRIPT ***********************
@@ -173,9 +189,9 @@ optparse = OptionParser.new do |opts|
   opts.on('-u', '--source_url URL', 'Source url of HLS manifest') { |v| options[:source_url] = v }
 
   opts.on('-k', '--key KEY', 'AWS key used to delete files') { |v| options[:key] = v }
-  opts.on('-s', '--secret SECRET', 'AWS secret used to delete files') { |v| options[:secret] = v }
-  opts.on('-r', '--region REGION', 'AWS S3 region used to delete files') { |v| options[:region] = v }
-  opts.on('-b', '--bucket BUCKET', 'AWS bucket name used to delete files') { |v| options[:bucket] = v }
+  opts.on('-s', '--secret SECRET', 'AWS secret used to delete files and upload report') { |v| options[:secret] = v }
+  opts.on('-r', '--region REGION', 'AWS S3 region used to delete files and upload report') { |v| options[:region] = v }
+  opts.on('-b', '--bucket BUCKET', 'AWS bucket name used to delete files and upload report') { |v| options[:bucket] = v }
   opts.on('-t', '--threshold MUL', "Update detection threshold in segments time (default = #{options[:error_threshold]})") { |v| options[:error_treshold] = v }
 
   #Optional
@@ -207,10 +223,14 @@ log(:info, "Read parameters: #{options.inspect}", options[:verbose])
 path = URI(options[:source_url]).path.split("/")
 options[:bucket] = path[1]
 
+#Local vars
 playlist_manifest_data = nil
 segment_duration_secs = nil
 loop_time_max_secs = 1
-
+delete_chunklist_treshold_secs = 3600
+chunklist_abs_url = nil
+report_update_secs = 10
+report_dest_path = nil
 exit = false
 
 while exit == false
@@ -222,19 +242,27 @@ while exit == false
       playlist_manifest_data = download_data(options[:source_url])
       log(:debug, "Playlist manifest data (from #{options[:source_url]}): #{playlist_manifest_data}", options[:verbose])
 
+      tmp = File.dirname(URI.parse(options[:source_url]).path).split("/")
+      report_dest_path = tmp[2..tmp.length].join("/")
+
       #Analise playlist manifest for rendition manifests, for every source
       chunklists = get_renditions_from_manifest(playlist_manifest_data)
       log(:debug, "rendition list: #{chunklists.join(", ")}", options[:verbose])
+
+      chunklist_abs_url = Array.new
+      chunklists.each do |chunklist_file|
+        chunklist_abs_url << create_abs_url(chunklist_file[0], options[:source_url])
+      end
     end
 
     #Get segment duration
     if !chunklists.nil? && segment_duration_secs.nil?
-      chunklists.each do |chunklist_file|
-        url = create_abs_url(chunklist_file[0], options[:source_url])
-        log(:debug, "Reading chunklist to get segment duration, path: #{chunklist_file[0]}, url: #{url}", options[:verbose])
-        segment_duration_secs = get_segment_duration(download_data(url))
+      chunklist_abs_url.each do |chunklist_url|
+        log(:debug, "Reading chunklist to get segment duration from url: #{chunklist_url}", options[:verbose])
+        segment_duration_secs = get_segment_duration(download_data(chunklist_url))
         if !segment_duration_secs.nil?
-          log(:info, "Detected segment duration of: #{segment_duration_secs} secs", options[:verbose])
+          delete_chunklist_treshold_secs = segment_duration_secs * options[:error_threshold]
+          log(:info, "Detected segment duration of: #{segment_duration_secs} secs, deletion threshold: #{delete_chunklist_treshold_secs}", options[:verbose])
           break
         end
       end
@@ -242,23 +270,32 @@ while exit == false
 
     #TODO: Create a thread for chunklist -> More efficient
 
-    #Check update times
-    chunklist_abs_url = Array.new
-    chunklists.each do |chunklist_file|
-      chunklist_abs_url << create_abs_url(chunklist_file[0], options[:source_url])
+    if !segment_duration_secs.nil?
+      #Get update times
+      chunklist_updated_times = s3_get_files_last_updated_time(chunklist_abs_url, options)
+
+      #Process update times and decide if is needed to delete the chunklists from any of the sources
+      chunklist_processed = get_chunklist_to_delete(chunklist_updated_times, delete_chunklist_treshold_secs)
+
+      chunklist_to_delete = chunklist_processed.select{ |i| i[:delete] == true }
+      if !chunklist_to_delete.empty?
+        #Delete chunklist from outdated source
+        log(:warning, "Chunklist to delete: #{chunklist_to_delete.join(", ")}", options[:verbose])
+        s3_delete_files(chunklist_to_delete, options)
+
+        sent = s3_send_report(report_dest_path, chunklist_to_delete, segment_duration_secs, delete_chunklist_treshold_secs, report_update_secs, false, options)
+        if !sent.nil?
+          log(:info, "Sent report to S3. Healthy: #{false}", options[:verbose])
+        end
+      else
+        log(:debug, "Chunklist updated times: #{chunklist_processed.join(", ")}", options[:verbose])
+
+        sent = s3_send_report(report_dest_path, chunklist_processed, segment_duration_secs, delete_chunklist_treshold_secs, report_update_secs, true, options)
+        if !sent.nil?
+          log(:info, "Sent report to S3. Healthy: #{true}", options[:verbose])
+        end
+      end
     end
-    chunklist_updated_times = s3_get_files_last_updated_time(chunklist_abs_url, options)
-    log(:debug, "Chunklist updated times: #{chunklist_updated_times.inspect}", options[:verbose])
-
-    #Process update times and decide if is needed to delete the chunklists from any of the sources
-    chunklist_to_delete = get_chunklist_to_delete(chunklist_updated_times, segment_duration_secs * options[:error_threshold])
-
-    #Delete chunklist from outdated source
-    if !chunklist_to_delete.empty?
-      log(:warning, "Chunklist to delete: #{chunklist_to_delete.join(", ")}", options[:verbose])
-      s3_delete_files(chunklist_to_delete, options)
-    end
-
   rescue SystemExit, Interrupt
     exit = true
     log(:info, "Captured SIGINT / SIGTERM, exiting...")
