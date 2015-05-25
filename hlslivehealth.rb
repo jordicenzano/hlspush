@@ -104,13 +104,16 @@ def s3_get_files_last_updated_time(file_url_list, update_treshold_secs, options)
     file = bucket.files.get(s3_get_path_from_url(file_url))
     last_update = 0
     healthy = false
+    todelete = false
     if !file.nil?
       last_update = Time.now.to_f - file.last_modified.to_f
       if update_treshold_secs > last_update
         healthy = true
+      else
+        todelete = true
       end
     end
-    file_list_last_updated_times << {:url => file_url, :secs_since_last_update => last_update, :healthy => healthy}
+    file_list_last_updated_times << {:url => file_url, :secs_since_last_update => last_update, :healthy => healthy, :todelete => todelete}
   end
 
   file_list_last_updated_times
@@ -124,10 +127,10 @@ def s3_delete_files(files_specs, options)
 
   files_specs.each do |file|
     file_path = s3_get_path_from_url(file[:url])
-    file = bucket.files.get(file_path)
-    if !file.nil?
+    s3file = bucket.files.get(file_path)
+    if !s3file.nil?
       begin
-        file.destroy
+        s3file.destroy
         log(:info, "Deleted #{options[:bucket]}/#{file_path}.")
       rescue Exception => e
         log(:warning, "Problem deleting #{options[:bucket]}/#{file_path}.")
@@ -141,7 +144,7 @@ def set_chunklist_to_delete(chunklist_list)
   delete_element = nil
 
   chunklist_list.each do |chunklist|
-    if chunklist[:healthy] == false
+    if chunklist[:todelete] == true
       delete_element = chunklist
       log(:warning, "Detected error updating #{delete_element[:url]}, updated #{chunklist[:secs_since_last_update]} secs ago")
       break
@@ -154,7 +157,7 @@ def set_chunklist_to_delete(chunklist_list)
     chunklist_list.each do |chunklist|
       url_chunklist = URI(chunklist[:url])
       if uri_delete.scheme == url_chunklist.scheme && uri_delete.host == url_chunklist.host && File.dirname(uri_delete.path) == File.dirname(url_chunklist.path)
-        chunklist[:healthy] = false
+        chunklist[:todelete] = true
         chunklist_to_delete << chunklist
       else
         chunklist_to_delete << chunklist
@@ -282,24 +285,26 @@ while exit == false
       #Decide the chunklist files to delete
       chunklist_processed = set_chunklist_to_delete(chunklist_updated_times)
 
-      chunklist_to_delete = chunklist_processed.select{ |i| i[:healthy] == false }
+      chunklist_to_delete = chunklist_processed.select{ |i| i[:todelete] == true }
       if !chunklist_to_delete.empty?
         #Delete chunklist from outdated source
         log(:warning, "Chunklist to delete: #{chunklist_to_delete.join(", ")}", options[:verbose])
         s3_delete_files(chunklist_to_delete, options)
-
-        sent = s3_send_report(report_dest_path, chunklist_processed, segment_duration_secs, delete_chunklist_treshold_secs, report_update_secs, false, options)
-        if !sent.nil?
-          log(:info, "Sent report to S3. Healthy: #{false}", options[:verbose])
-        end
       else
         log(:debug, "Chunklist updated times: #{chunklist_processed.join(", ")}", options[:verbose])
-
-        sent = s3_send_report(report_dest_path, chunklist_processed, segment_duration_secs, delete_chunklist_treshold_secs, report_update_secs, true, options)
-        if !sent.nil?
-          log(:info, "Sent report to S3. Healthy: #{true}", options[:verbose])
-        end
       end
+
+      total_health = true
+      chunklist_unhealthy = chunklist_processed.select{ |i| i[:healthy] == false }
+      if !chunklist_unhealthy.empty?
+        total_health = false
+      end
+
+      sent = s3_send_report(report_dest_path, chunklist_processed, segment_duration_secs, delete_chunklist_treshold_secs, report_update_secs, total_health, options)
+      if !sent.nil?
+        log(:info, "Sent report to S3. Healthy: #{total_health}", options[:verbose])
+      end
+
     end
   rescue SystemExit, Interrupt
     exit = true
