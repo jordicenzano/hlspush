@@ -155,9 +155,9 @@ def set_chunklist_to_delete(chunklist_list)
       url_chunklist = URI(chunklist[:url])
       if uri_delete.scheme == url_chunklist.scheme && uri_delete.host == url_chunklist.host && File.dirname(uri_delete.path) == File.dirname(url_chunklist.path)
         chunklist[:healthy] = false
-        chunklist_to_delete << chunk_list
+        chunklist_to_delete << chunklist
       else
-        chunklist_to_delete << chunk_list
+        chunklist_to_delete << chunklist
       end
     end
   else
