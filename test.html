@@ -498,7 +498,7 @@ function refreshHealthUI(label, table, error, data)
   }
   else
   {
-    labelHealth.innerHTML = "Health: " + data.healthy + " (seg dur: " + data.segment_duration_secs + "s, Update time out: " + data.delete_chunklist_treshold_secs +")"
+    labelHealth.innerHTML = "Health: " + data.healthy + " (seg dur: " + data.segment_duration_secs + "s, Update time out: " + data.delete_chunklist_treshold_secs + "). Timestamp: " + data.updated;
     buildHtmlTable(data.chunklist_data, table);
   }
 }
