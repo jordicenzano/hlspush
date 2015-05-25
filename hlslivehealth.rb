@@ -231,7 +231,7 @@ segment_duration_secs = nil
 loop_time_max_secs = 1
 delete_chunklist_treshold_secs = 3600
 chunklist_abs_url = nil
-report_update_secs = 10
+report_update_secs = 3
 report_dest_path = nil
 exit = false
 
