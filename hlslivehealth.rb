@@ -132,7 +132,7 @@ def s3_delete_files(files_specs, options)
   end
 end
 
-def get_chunklist_to_delete(chunklist_times, update_treshold_secs)
+def set_chunklist_to_delete(chunklist_times, update_treshold_secs)
   chunklist_to_delete = Array.new
   delete_element = nil
 
@@ -156,6 +156,8 @@ def get_chunklist_to_delete(chunklist_times, update_treshold_secs)
         chunklist_to_delete << chunk_list
       end
     end
+  else
+    chunklist_to_delete = chunklist_times
   end
 
   chunklist_to_delete
@@ -275,7 +277,7 @@ while exit == false
       chunklist_updated_times = s3_get_files_last_updated_time(chunklist_abs_url, options)
 
       #Process update times and decide if is needed to delete the chunklists from any of the sources
-      chunklist_processed = get_chunklist_to_delete(chunklist_updated_times, delete_chunklist_treshold_secs)
+      chunklist_processed = set_chunklist_to_delete(chunklist_updated_times, delete_chunklist_treshold_secs)
 
       chunklist_to_delete = chunklist_processed.select{ |i| i[:delete] == true }
       if !chunklist_to_delete.empty?
@@ -283,7 +285,7 @@ while exit == false
         log(:warning, "Chunklist to delete: #{chunklist_to_delete.join(", ")}", options[:verbose])
         s3_delete_files(chunklist_to_delete, options)
 
-        sent = s3_send_report(report_dest_path, chunklist_to_delete, segment_duration_secs, delete_chunklist_treshold_secs, report_update_secs, false, options)
+        sent = s3_send_report(report_dest_path, chunklist_processed, segment_duration_secs, delete_chunklist_treshold_secs, report_update_secs, false, options)
         if !sent.nil?
           log(:info, "Sent report to S3. Healthy: #{false}", options[:verbose])
         end
