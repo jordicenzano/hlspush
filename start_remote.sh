@@ -78,7 +78,7 @@ LOG_SUFFIX=$2
 ps aux | grep $STREAMNAME | grep ffmpeg | grep $REMOTE_IP |grep -v grep | awk '{print $2};' | xargs kill -9 >/dev/null 2>&1
 
 #Publish stream to A
-echo "$(tput setaf 2)Running ffmpeg to wowza A, logs in ./log/"$STREAMNAME"_ffmpegA$(tput sgr 0)"
+echo "$(tput setaf 2)Running ffmpeg to wowza $LOG_SUFFIX, logs in ./log/"$STREAMNAME"_ffmpeg$LOG_SUFFIX$(tput sgr 0)"
 ffmpeg -f lavfi -re -i testsrc=duration=36000:size=320x250:rate=25 -f lavfi -re -i "sine=frequency=1000:duration=36000:sample_rate=44100" -i ./pictures/$LOG_SUFFIX.png -filter_complex 'overlay=10:main_h-overlay_h-10' -pix_fmt yuv420p -c:v libx264 -b:v 500k -g 25 -profile:v baseline -preset veryfast -c:a libfaac -b:a 96k -f flv "rtmp://$WOWZA_PUBLISHING_USER:$WOWZA_PUBLISHING_PASS@$REMOTE_IP:1935/liveorigin/$STREAMNAME" > ./log/"$STREAMNAME"_ffmpeg"$LOG_SUFFIX".log 2> ./log/"$STREAMNAME"_ffmpeg"$LOG_SUFFIX"_err.log &
 }
 

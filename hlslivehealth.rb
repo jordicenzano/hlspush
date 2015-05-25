@@ -91,7 +91,7 @@ def s3_get_path_from_url(url)
   uri_path[2..uri_path.length].join("/")
 end
 
-def s3_get_files_last_updated_time(file_url_list, options)
+def s3_get_files_last_updated_time(file_url_list, update_treshold_secs, options)
   file_list_last_updated_times = Array.new
 
   fog_options = {:provider => 'AWS', :aws_access_key_id => options[:key], :aws_secret_access_key => options[:secret], :region => options[:region]}
@@ -103,10 +103,14 @@ def s3_get_files_last_updated_time(file_url_list, options)
   file_url_list.each do |file_url|
     file = bucket.files.get(s3_get_path_from_url(file_url))
     last_update = 0
+    healthy = false
     if !file.nil?
       last_update = Time.now.to_f - file.last_modified.to_f
+      if update_treshold_secs > last_update
+        healthy = true
+      end
     end
-    file_list_last_updated_times << {:url => file_url, :secs_since_last_update => last_update, :delete => false}
+    file_list_last_updated_times << {:url => file_url, :secs_since_last_update => last_update, :healthy => healthy}
   end
 
   file_list_last_updated_times
@@ -132,12 +136,12 @@ def s3_delete_files(files_specs, options)
   end
 end
 
-def set_chunklist_to_delete(chunklist_times, update_treshold_secs)
+def set_chunklist_to_delete(chunklist_times)
   chunklist_to_delete = Array.new
   delete_element = nil
 
   chunklist_times.each do |chunk_list|
-    if chunk_list[:secs_since_last_update] > update_treshold_secs
+    if chunk_list[:healthy] == false
       delete_element = chunk_list
       log(:warning, "Detected error updating #{delete_element[:url]}, updated #{chunk_list[:secs_since_last_update]} secs ago")
       break
@@ -150,7 +154,7 @@ def set_chunklist_to_delete(chunklist_times, update_treshold_secs)
     chunklist_times.each do |chunk_list|
       url_chunklist = URI(chunk_list[:url])
       if uri_delete.scheme == url_chunklist.scheme && uri_delete.host == url_chunklist.host && File.dirname(uri_delete.path) == File.dirname(url_chunklist.path)
-        chunk_list[:delete] = true
+        chunk_list[:healthy] = true
         chunklist_to_delete << chunk_list
       else
         chunklist_to_delete << chunk_list
@@ -274,12 +278,11 @@ while exit == false
 
     if !segment_duration_secs.nil?
       #Get update times
-      chunklist_updated_times = s3_get_files_last_updated_time(chunklist_abs_url, options)
+      chunklist_updated_times = s3_get_files_last_updated_time(chunklist_abs_url, delete_chunklist_treshold_secs, options)
+      #Decide the chunklist files to delete
+      chunklist_processed = set_chunklist_to_delete(chunklist_updated_times)
 
-      #Process update times and decide if is needed to delete the chunklists from any of the sources
-      chunklist_processed = set_chunklist_to_delete(chunklist_updated_times, delete_chunklist_treshold_secs)
-
-      chunklist_to_delete = chunklist_processed.select{ |i| i[:delete] == true }
+      chunklist_to_delete = chunklist_processed.select{ |i| i[:healthy] == false }
       if !chunklist_to_delete.empty?
         #Delete chunklist from outdated source
         log(:warning, "Chunklist to delete: #{chunklist_to_delete.join(", ")}", options[:verbose])
