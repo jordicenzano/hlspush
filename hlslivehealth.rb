@@ -201,7 +201,7 @@ optparse = OptionParser.new do |opts|
   opts.on('-s', '--secret SECRET', 'AWS secret used to delete files and upload report') { |v| options[:secret] = v }
   opts.on('-r', '--region REGION', 'AWS S3 region used to delete files and upload report') { |v| options[:region] = v }
   opts.on('-b', '--bucket BUCKET', 'AWS bucket name used to delete files and upload report') { |v| options[:bucket] = v }
-  opts.on('-t', '--threshold MUL', "Update detection threshold in segments time (default = #{options[:error_threshold]})") { |v| options[:error_treshold] = v }
+  opts.on('-t', '--threshold MUL', "Update detection threshold in segments time (default = #{options[:error_threshold]})") { |v| options[:error_threshold] = v }
 
   #Optional
   opts.on('-v', '--verbose', 'Verbose log (Default = false)') { |v| options[:verbose] = true }
@@ -270,7 +270,7 @@ while exit == false
         log(:debug, "Reading chunklist to get segment duration from url: #{chunklist_url}", options[:verbose])
         segment_duration_secs = get_segment_duration(download_data(chunklist_url))
         if !segment_duration_secs.nil?
-          delete_chunklist_treshold_secs = segment_duration_secs * options[:error_threshold]
+          delete_chunklist_treshold_secs = segment_duration_secs.to_f * options[:error_threshold].to_f
           log(:info, "Detected segment duration of: #{segment_duration_secs} secs, deletion threshold: #{delete_chunklist_treshold_secs}", options[:verbose])
           break
         end
