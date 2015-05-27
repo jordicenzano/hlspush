@@ -175,11 +175,19 @@ def s3_send_report(dest_path, chunklist, segment_duration_secs, delete_chunklist
     @report_last_sent = Time.now
     report = {:healthy => healthy, :updated => @report_last_sent.to_i, :segment_duration_secs => segment_duration_secs, :delete_chunklist_treshold_secs => delete_chunklist_treshold_secs, :chunklist_data => chunklist}
 
+    dest_path_filename = File.join(dest_path, "health_report.json")
+
     fog_options = {:provider => 'AWS', :aws_access_key_id => options[:key], :aws_secret_access_key => options[:secret], :region => options[:region]}
     connection = Fog::Storage.new(fog_options)
     bucket = connection.directories.get(options[:bucket])
 
-    bucket.files.create(:key => File.join(dest_path, "health_report.json"), :body => report.to_json, :metadata => {}, :public => true )
+    s3_file = bucket.files.head(dest_path_filename)
+    if s3_file == nil
+      bucket.files.create(:key => dest_path_filename, :body => report.to_json, :metadata => {}, :public => true )
+    else
+      s3_file.body = report.to_json
+      s3_file.save
+    end
   end
 end
 
