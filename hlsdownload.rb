@@ -160,21 +160,23 @@ def s3_upload(file_specs, options, skip_if_file_exists_in_dest)
   end
   cache_control_max_age = file_specs[:cache_max_age]
 
-  do_upload = true
-  if skip_if_file_exists_in_dest == true
-    if bucket.files.head(dest_path) != nil
-      #File exists in destination
-      do_upload = false
-      log(:debug,"Skipped upload of file #{source} to bucket #{options[:dest_options][:bucket]}/#{dest_path}.")
+  s3_file = bucket.files.head(dest_path)
+
+  if s3_file != nil && skip_if_file_exists_in_dest == true
+    #File exists in destination
+    log(:debug,"Skipped upload of file #{source} to bucket #{options[:dest_options][:bucket]}/#{dest_path}.")
+  else
+    if s3_file != nil
+      s3_file.body = File.open(source)
+      s3_file.save
+      log(:info, "Updated file #{source} to bucket #{options[:dest_options][:bucket]}/#{dest_path}.")
+    else
+      file = bucket.files.create(:key => dest_path, :body => File.open(source), :metadata => {"Cache-Control" => "max-age=#{cache_control_max_age}"}, :public => true )
+      log(:info, "Created file #{source} to bucket #{options[:dest_options][:bucket]}/#{dest_path}.")
     end
   end
 
-  if do_upload == true
-    file = bucket.files.create(:key => dest_path, :body => File.open(source), :metadata => {"Cache-Control" => "max-age=#{cache_control_max_age}"}, :public => true )
-    log(:info, "Uploaded file #{source} to bucket #{options[:dest_options][:bucket]}/#{dest_path}.")
-
-    file
-  end
+  s3_file
 
 end
 

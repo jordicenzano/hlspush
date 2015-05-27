@@ -43,6 +43,9 @@ LOCAL_S3_BUCKET_BCK=$3
 PREFIX_MAIN=$4
 PREFIX_BCK=$5
 
+NGPR="$APP_NAME/ngrp:${STREAMNAME}_all"
+SMIL="$STREAMNAME/smil:${STREAMNAME}.smil"
+
 ssh -i ./cred/newlivetestJordi.pem ec2-user@$REMOTE_IP << EOF
 cd /home/ec2-user/hlspush
 
@@ -58,11 +61,11 @@ rm -f skip_upload
 rm -f ./log/$STREAMNAME*
 
 #Run hls push process
-nohup ./hlsdownload.rb -d s3 -u "http://localhost:1935/$APP_NAME/ngrp:"$STREAMNAME"_all/playlist.m3u8" -l "./localtest/$STREAMNAME" -k "$S3KEY" -s "$S3SECRET" -r "$S3REGION" -b "$LOCAL_S3_BUCKET_MAIN" -m $CACHECONTROL_CHUNKLISTS_S -t $CACHE_CONTROL_SEGMENTS_S -y $CACHECONTROL_MANIFESTS_S -j "./skip_upload" -x "$LOCAL_S3_BUCKET_BCK" -c "$ACCESS_SCHEMA" -p $PREFIX_MAIN -q $PREFIX_BCK -f "$CLOUDFRONT_DIST" -v 1 > ./log/"$STREAMNAME"_push.log 2>&1 < /dev/null &
+nohup ./hlsdownload.rb -d s3 -u "http://localhost:1935/$NGPR/playlist.m3u8" -l "./localtest/$STREAMNAME" -k "$S3KEY" -s "$S3SECRET" -r "$S3REGION" -b "$LOCAL_S3_BUCKET_MAIN" -m $CACHECONTROL_CHUNKLISTS_S -t $CACHE_CONTROL_SEGMENTS_S -y $CACHECONTROL_MANIFESTS_S -j "./skip_upload" -x "$LOCAL_S3_BUCKET_BCK" -c "$ACCESS_SCHEMA" -p $PREFIX_MAIN -q $PREFIX_BCK -f "$CLOUDFRONT_DIST" -v 1 > ./log/"$STREAMNAME"_push.log 2>&1 < /dev/null &
 touch ./running/hlsdownload/$STREAMNAME
 
 #Run hls health process
-nohup ./hlslivehealth.rb -u "$ACCESS_SCHEMA://s3-$S3REGION.amazonaws.com/$LOCAL_S3_BUCKET_BCK/$PREFIX_BCK/$APP_NAME/ngrp:"$STREAMNAME"_all/playlist.m3u8" -k "$S3KEY" -s "$S3SECRET" -r "$S3REGION" -t $SEGMENT_FAILURE_DETECTION_TRESHOLD > ./log/"$STREAMNAME"_health.log 2>&1 < /dev/null &
+nohup ./hlslivehealth.rb -u "$ACCESS_SCHEMA://s3-$S3REGION.amazonaws.com/$LOCAL_S3_BUCKET_BCK/$PREFIX_BCK/$NGPR/playlist.m3u8" -k "$S3KEY" -s "$S3SECRET" -r "$S3REGION" -t $SEGMENT_FAILURE_DETECTION_TRESHOLD > ./log/"$STREAMNAME"_health.log 2>&1 < /dev/null &
 touch ./running/hlshealth/$STREAMNAME
 
 exit
