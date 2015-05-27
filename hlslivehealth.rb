@@ -106,7 +106,7 @@ def s3_get_files_last_updated_time(file_url_list, update_treshold_secs, options)
     healthy = false
     todelete = false
     if !file.nil?
-      last_update = Time.now.to_f - file.last_modified.to_f
+      last_update = [Time.now.to_f - file.last_modified.to_f, 0].max
       if update_treshold_secs > last_update
         healthy = true
       else

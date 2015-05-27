@@ -319,7 +319,7 @@ optparse = OptionParser.new do |opts|
     end
   end
   #Mandatory if dest = local
-  opts.on('-f', '--path path', 'Local destination path for processed HLS. Used only if dest_type = "local"') { |v| options[:dest_options][:path] = v }
+  opts.on('-z', '--path path', 'Local destination path for processed HLS. Used only if dest_type = "local"') { |v| options[:dest_options][:path] = v }
 
   #Mandatory if dest = S3
   opts.on('-k', '--key KEY', 'AWS key') { |v| options[:dest_options][:key] = v }

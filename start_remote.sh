@@ -80,6 +80,10 @@ ps aux | grep $STREAMNAME | grep ffmpeg | grep $REMOTE_IP |grep -v grep | awk '{
 #Publish stream to A
 echo "$(tput setaf 2)Running ffmpeg to wowza $LOG_SUFFIX, logs in ./log/"$STREAMNAME"_ffmpeg$LOG_SUFFIX$(tput sgr 0)"
 ffmpeg -f lavfi -re -i testsrc=duration=36000:size=320x250:rate=25 -f lavfi -re -i "sine=frequency=1000:duration=36000:sample_rate=44100" -i ./pictures/$LOG_SUFFIX.png -filter_complex 'overlay=10:main_h-overlay_h-10' -pix_fmt yuv420p -c:v libx264 -b:v 500k -g 25 -profile:v baseline -preset veryfast -c:a libfaac -b:a 96k -f flv "rtmp://$WOWZA_PUBLISHING_USER:$WOWZA_PUBLISHING_PASS@$REMOTE_IP:1935/liveorigin/$STREAMNAME" > ./log/"$STREAMNAME"_ffmpeg"$LOG_SUFFIX".log 2> ./log/"$STREAMNAME"_ffmpeg"$LOG_SUFFIX"_err.log &
+
+#To publish a file (alpha stage)
+VIDEO_FILE_TO_PUBLISH="/Users/jcenzano/Movies/bbb_sunflower_2160p_60fps_normal.mp4"
+#ffmpeg -i "$VIDEO_FILE_TO_PUBLISH" -vcodec copy -c:a libfaac -b:a 96k -f flv "rtmp://$WOWZA_PUBLISHING_USER:$WOWZA_PUBLISHING_PASS@$REMOTE_IP:1935/liveorigin/$STREAMNAME" > ./log/"$STREAMNAME"_ffmpeg"$LOG_SUFFIX".log 2> ./log/"$STREAMNAME"_ffmpeg"$LOG_SUFFIX"_err.log &
 }
 
 
