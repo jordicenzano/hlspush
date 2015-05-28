@@ -1,0 +1,699 @@
+<html>
+
+<style>
+
+html {
+  padding:0;
+  margin:0;
+}
+li.bg, .bg {
+  clear:both;
+  border-bottom:1px dashed #818181;
+  padding:0;
+  margin:10px 0;
+  background:none;
+  list-style:none;
+}
+p.clr, .clr {
+  clear:both;
+  padding:0;
+  margin:0;
+}
+
+body{margin:0; padding:0; font-size:12px; font-family: "Trebuchet MS", Arial, Helvetica, sans-serif; color:#787878; background-color:#E0E0E0;}
+
+
+.startButton {
+  background-color:#44c767;
+  -moz-border-radius:15px;
+  -webkit-border-radius:15px;
+  border-radius:15px;
+  border:3px solid #18ab29;
+  display:inline-block;
+  cursor:pointer;
+  color:#ffffff;
+  font-family:Arial;
+  font-size:17px;
+  padding:2px 40px;
+  text-decoration:none;
+  text-shadow:1px -1px 9px #2f6627;
+}
+.startButton:hover {
+  background-color:#5cbf2a;
+}
+.startButton:active {
+  position:relative;
+  top:1px;
+}
+.tabledata {
+  margin:0px;padding:0px;
+  width:100%;
+  box-shadow: 10px 10px 5px #888888;
+  border:1px solid #ffffff;
+  
+  -moz-border-radius-bottomleft:0px;
+  -webkit-border-bottom-left-radius:0px;
+  border-bottom-left-radius:0px;
+  
+  -moz-border-radius-bottomright:0px;
+  -webkit-border-bottom-right-radius:0px;
+  border-bottom-right-radius:0px;
+  
+  -moz-border-radius-topright:0px;
+  -webkit-border-top-right-radius:0px;
+  border-top-right-radius:0px;
+  
+  -moz-border-radius-topleft:0px;
+  -webkit-border-top-left-radius:0px;
+  border-top-left-radius:0px;
+}.tabledata table{
+    border-collapse: collapse;
+        border-spacing: 0;
+  width:100%;
+  height:100%;
+  margin:0px;padding:0px;
+}.tabledata tr:last-child td:last-child {
+  -moz-border-radius-bottomright:0px;
+  -webkit-border-bottom-right-radius:0px;
+  border-bottom-right-radius:0px;
+}
+.tabledata table tr:first-child td:first-child {
+  -moz-border-radius-topleft:0px;
+  -webkit-border-top-left-radius:0px;
+  border-top-left-radius:0px;
+}
+.tabledata table tr:first-child td:last-child {
+  -moz-border-radius-topright:0px;
+  -webkit-border-top-right-radius:0px;
+  border-top-right-radius:0px;
+}.tabledata tr:last-child td:first-child{
+  -moz-border-radius-bottomleft:0px;
+  -webkit-border-bottom-left-radius:0px;
+  border-bottom-left-radius:0px;
+}.tabledata tr:hover td{
+  background-color:#e5e5e5;
+    
+
+}
+.tabledata td{
+  vertical-align:middle;
+    background:-o-linear-gradient(bottom, #ffffff 5%, #e5e5e5 100%);  background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #ffffff), color-stop(1, #e5e5e5) ); 
+  background:-moz-linear-gradient( center top, #ffffff 5%, #e5e5e5 100% );
+  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr="#ffffff", endColorstr="#e5e5e5");  background: -o-linear-gradient(top,#ffffff,e5e5e5);
+
+  background-color:#ffffff;
+
+  border:1px solid #ffffff;
+  border-width:0px 1px 1px 0px;
+  text-align:left;
+  padding:7px;
+  font-size:10px;
+  font-family:Arial;
+  font-weight:normal;
+  color:#000000;
+}.tabledata tr:last-child td{
+  border-width:0px 1px 0px 0px;
+}.tabledata tr td:last-child{
+  border-width:0px 0px 1px 0px;
+}.tabledata tr:last-child td:last-child{
+  border-width:0px 0px 0px 0px;
+}
+
+.tabledata tr:first-child td{
+    background:-o-linear-gradient(bottom, #cccccc 5%, #b2b2b2 100%);  background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #cccccc), color-stop(1, #b2b2b2) );
+  background:-moz-linear-gradient( center top, #cccccc 5%, #b2b2b2 100% );
+  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr="#cccccc", endColorstr="#b2b2b2");  background: -o-linear-gradient(top,#cccccc,b2b2b2);
+
+  background-color:#cccccc;
+  border:0px solid #ffffff;
+  text-align:center;
+  border-width:0px 0px 1px 1px;
+  font-size:14px;
+  font-family:Arial;
+  font-weight:bold;
+  color:#000000;
+}
+.tabledata tr:first-child:hover td{
+  background:-o-linear-gradient(bottom, #cccccc 5%, #b2b2b2 100%);  background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #cccccc), color-stop(1, #b2b2b2) );
+  background:-moz-linear-gradient( center top, #cccccc 5%, #b2b2b2 100% );
+  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr="#cccccc", endColorstr="#b2b2b2");  background: -o-linear-gradient(top,#cccccc,b2b2b2);
+
+  background-color:#cccccc;
+}
+.tabledata tr:first-child td:first-child{
+  border-width:0px 0px 1px 0px;
+}
+.tabledata tr:first-child td:last-child{
+  border-width:0px 0px 1px 1px;
+}
+
+.tablevideo {
+  margin:0px;padding:0px;
+  width:100%;
+  box-shadow: 10px 10px 5px #888888;
+  border:1px solid #ffffff;
+  
+  -moz-border-radius-bottomleft:0px;
+  -webkit-border-bottom-left-radius:0px;
+  border-bottom-left-radius:0px;
+  
+  -moz-border-radius-bottomright:0px;
+  -webkit-border-bottom-right-radius:0px;
+  border-bottom-right-radius:0px;
+  
+  -moz-border-radius-topright:0px;
+  -webkit-border-top-right-radius:0px;
+  border-top-right-radius:0px;
+  
+  -moz-border-radius-topleft:0px;
+  -webkit-border-top-left-radius:0px;
+  border-top-left-radius:0px;
+}.tablevideo table{
+    border-collapse: collapse;
+        border-spacing: 0;
+  width:100%;
+  height:100%;
+  margin:0px;padding:0px;
+}.tablevideo tr:last-child td:last-child {
+  -moz-border-radius-bottomright:0px;
+  -webkit-border-bottom-right-radius:0px;
+  border-bottom-right-radius:0px;
+}
+.tablevideo table tr:first-child td:first-child {
+  -moz-border-radius-topleft:0px;
+  -webkit-border-top-left-radius:0px;
+  border-top-left-radius:0px;
+}
+.tablevideo table tr:first-child td:last-child {
+  -moz-border-radius-topright:0px;
+  -webkit-border-top-right-radius:0px;
+  border-top-right-radius:0px;
+}.tablevideo tr:last-child td:first-child{
+  -moz-border-radius-bottomleft:0px;
+  -webkit-border-bottom-left-radius:0px;
+  border-bottom-left-radius:0px;
+}.tablevideo tr:hover td{
+  background-color:#e5e5e5;
+    
+
+}
+.tablevideo td{
+  vertical-align:middle;
+  
+  background-color:#ffffff;
+
+  border:1px solid #ffffff;
+  border-width:0px 1px 1px 0px;
+  text-align:center;
+  padding:7px;
+  font-size:11px;
+  font-family:Arial;
+  font-weight:normal;
+  color:#000000;
+}.tablevideo tr:last-child td{
+  border-width:0px 1px 0px 0px;
+}.tablevideo tr td:last-child{
+  border-width:0px 0px 1px 0px;
+}.tablevideo tr:last-child td:last-child{
+  border-width:0px 0px 0px 0px;
+}
+.tablevideo tr:first-child td{
+    background:-o-linear-gradient(bottom, #cccccc 5%, #b2b2b2 100%);  background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #cccccc), color-stop(1, #b2b2b2) );
+  background:-moz-linear-gradient( center top, #cccccc 5%, #b2b2b2 100% );
+  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr="#cccccc", endColorstr="#b2b2b2");  background: -o-linear-gradient(top,#cccccc,b2b2b2);
+
+  background-color:#cccccc;
+  border:0px solid #ffffff;
+  text-align:center;
+  border-width:0px 0px 1px 1px;
+  font-size:16px;
+  font-family:Arial;
+  font-weight:bold;
+  color:#000000;
+}
+
+.tablevideo tr:first-child td:first-child{
+  border-width:0px 0px 1px 0px;
+}
+.tablevideo tr:first-child td:last-child{
+  border-width:0px 0px 1px 1px;
+}
+
+.inputtext {
+  display: inline-block;
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+  padding: 3px 15px 3px 16px;
+  border: 1px solid #b7b7b7;
+  -webkit-border-radius: 3px;
+  border-radius: 3px;
+  font: normal 16px/normal "Times New Roman", Times, serif;
+  color: rgba(30,45,51,1);
+  -o-text-overflow: clip;
+  text-overflow: clip;
+  background: rgba(252,252,252,1);
+  -webkit-box-shadow: 2px 2px 2px 0 rgba(0,0,0,0.2) inset;
+  box-shadow: 2px 2px 2px 0 rgba(0,0,0,0.2) inset;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.66) ;
+  -webkit-transition: all 200ms cubic-bezier(0.42, 0, 0.58, 1);
+  -moz-transition: all 200ms cubic-bezier(0.42, 0, 0.58, 1);
+  -o-transition: all 200ms cubic-bezier(0.42, 0, 0.58, 1);
+  transition: all 200ms cubic-bezier(0.42, 0, 0.58, 1);
+}
+
+label {
+  width:25%;
+  margin-right:0.5em;
+  padding-top:0.2em;
+  }
+
+input:disabled {
+    background: #dddddd;
+}
+
+.healthdata {
+  margin:0px;padding:0px;
+  width:100%;
+  border:1px solid #000000;
+  
+  -moz-border-radius-bottomleft:8px;
+  -webkit-border-bottom-left-radius:8px;
+  border-bottom-left-radius:8px;
+  
+  -moz-border-radius-bottomright:8px;
+  -webkit-border-bottom-right-radius:8px;
+  border-bottom-right-radius:8px;
+  
+  -moz-border-radius-topright:8px;
+  -webkit-border-top-right-radius:8px;
+  border-top-right-radius:8px;
+  
+  -moz-border-radius-topleft:8px;
+  -webkit-border-top-left-radius:8px;
+  border-top-left-radius:8px;
+}.healthdata table{
+    border-collapse: collapse;
+        border-spacing: 0;
+  width:100%;
+  height:100%;
+  margin:0px;padding:0px;
+}.healthdata tr:last-child td:last-child {
+  -moz-border-radius-bottomright:8px;
+  -webkit-border-bottom-right-radius:8px;
+  border-bottom-right-radius:8px;
+}
+.healthdata table tr:first-child td:first-child {
+  -moz-border-radius-topleft:8px;
+  -webkit-border-top-left-radius:8px;
+  border-top-left-radius:8px;
+}
+.healthdata table tr:first-child td:last-child {
+  -moz-border-radius-topright:8px;
+  -webkit-border-top-right-radius:8px;
+  border-top-right-radius:8px;
+}.healthdata tr:last-child td:first-child{
+  -moz-border-radius-bottomleft:8px;
+  -webkit-border-bottom-left-radius:8px;
+  border-bottom-left-radius:8px;
+}.healthdata tr:hover td{
+  
+}
+.healthdata tr:nth-child(odd){ background-color:#e5e5e5; }
+.healthdata tr:nth-child(even)    { background-color:#ffffff; }.healthdata td{
+  vertical-align:middle;
+  
+  
+  border:1px solid #000000;
+  border-width:0px 1px 1px 0px;
+  text-align:left;
+  padding:4px;
+  font-size:7px;
+  font-family:Arial;
+  font-weight:normal;
+  color:#000000;
+}.healthdata tr:last-child td{
+  border-width:0px 1px 0px 0px;
+}.healthdata tr td:last-child{
+  border-width:0px 0px 1px 0px;
+}.healthdata tr:last-child td:last-child{
+  border-width:0px 0px 0px 0px;
+}
+.healthdata tr:first-child td{
+    background:-o-linear-gradient(bottom, #000000 5%, #999999 100%);  background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #000000), color-stop(1, #999999) );
+  background:-moz-linear-gradient( center top, #000000 5%, #999999 100% );
+  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr="#000000", endColorstr="#999999");  background: -o-linear-gradient(top,#000000,999999);
+
+  background-color:#000000;
+  border:0px solid #000000;
+  text-align:center;
+  border-width:0px 0px 1px 1px;
+  font-size:13px;
+  font-family:Arial;
+  font-weight:bold;
+  color:#ffffff;
+}
+
+.healthdata tr:first-child td:first-child{
+  border-width:0px 0px 1px 0px;
+}
+.healthdata tr:first-child td:last-child{
+  border-width:0px 0px 1px 1px;
+}
+
+</style>
+
+<head>
+    <title>Brightcove live Streaming test</title>
+</head>
+<body onload="onLoadPage()">
+<h1 align="center"> Brightcove live streaming test (By Jordi Cenzano)</h1>
+<br>
+<center><img src="aws_blocks_cf_0003.png" alt="Demo block diagram" width="600" height="250" ></center>
+<p align="center">Block diagram</p>
+<br>
+<table id="tdata" class="tabledata" style="width:100%; text-align:left; border:none">
+  <tr>
+    <td>Select source to view:</td>
+  </tr>
+  <tr>
+    <td><input type="radio" id="sourcecf" name="source" value="cf" onchange=onSourceChanged()>CloudFront</td>
+    <td><input type="radio" id="sources3" name="source" value="s3" onchange=onSourceChanged()>S3</td>
+    <td><input type="radio" id="sourcewo" name="source" value="wo" checked onchange=onSourceChanged()>Wowza</td>
+  </tr>
+  <tr>
+    <td><label style="font-weight:bold;">Stream name:</label><input style="width:75%" class="inputtext" type="text" id="streamName" name="streamName" value="streamName" oninput="onChangeText()"></td>
+    <td><label>Wowza A URL:</label><input style="width:75%" class="inputtext" type="text" id="wowzaAurl" name="wowzaAurl" value="54.215.81.31" oninput="onChangeText()"></td>
+    <td><label>Wowza B URL:</label><input style="width:75%" class="inputtext" type="text" id="wowzaBurl" name="wowzaBurl" value="54.241.18.2" oninput="onChangeText()"></td>
+  </tr>
+  <tr>
+    <td><label>CF domain:</label><input style="width:75%" class="inputtext" type="text" id="cfdomain" name="cfdomain" value="d1r4mgnrsk8cxw.cloudfront.net" disabled="true" oninput="onChangeText()"></td>
+    <td><label>S3 prefix A:</label><input style="width:75%" class="inputtext" type="text" id="s3prefixA" name="s3prefixA" value="s3-us-west-1.amazonaws.com/live-test-bcov" disabled="true" oninput="onChangeText()"></td>
+    <td><label>S3 prefix B:</label><input style="width:75%" class="inputtext" type="text" id="s3prefixB" name="s3prefixB" value="s3-us-west-1.amazonaws.com/live-test-bck-bcov" disabled="true" oninput="onChangeText()"></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td style="text-align:center"><button class="startButton" onclick="userSubmit()">Start!</button></td>
+    <td></td>
+  </tr>
+</table>
+<br>
+<br>
+<br>
+<table id="tvideo" class="tablevideo" style="width:100%">
+  <tr>
+    <th>-A-</th>
+    <th>-B-</th> 
+    <th>REDUNDANT STREAMS (auto source selection)</th>
+  </tr>
+  <tr>
+    <tr>
+      <td><label id="healthAsummary"></label><br><br><div class="healthdata"><table id="healthA" border="1"></table></div></td>
+      <td><label id="healthBsummary"></label><br><br><div class="healthdata"><table id="healthB" border="1"></table></div></td>     
+      <td><label id="healthR"></label></td>
+    </tr>
+    <td><video id="videoA"
+        src=""
+        width="200" controls muted
+        poster="bcov-logo.jpg"
+    ></video></td>
+    <td><video id="videoB"
+        src=""
+        width="200" controls muted
+        poster="bcov-logo.jpg"
+    ></video></td> 
+    <td><video id="videoRedundant"
+        src=""
+        width="400" controls
+        poster="bcov-logo.jpg"
+    ></video></td>
+  </tr>
+  <tr>
+    <td><label id="lblA">-</label></td>
+    <td><label id="lblB">-</label></td>
+    <td><label id="lblR">-</label></td>
+  </tr>
+</table>
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+
+<script type="text/javascript">
+
+function onLoadPage(){
+  refreshLabels();
+
+  refreshHealthA();
+  refreshHealthB();
+}
+
+function refreshHealthA() {
+
+  var urlA = "http://[$$REPLACE_S3_PREFIX$$]/A/__REPLACE_STREAM__/smil:__REPLACE_STREAM__.smil/health_report.json";
+  urlA = urlA.replace(new RegExp("__REPLACE_STREAM__", 'g'),document.getElementById('streamName').value)
+  urlA = urlA.replace("[$$REPLACE_S3_PREFIX$$]",document.getElementById('s3prefixA').value)
+
+  $.ajax({
+    url: urlA,
+    dataType: 'json',
+    timeout: 4000,
+    success: function(file_data) {
+      refreshHealthUI("healthAsummary", "healthA",false, file_data)
+    },
+    error: function() {
+      refreshHealthUI("healthAsummary", "healthA",true, null);
+    }
+  });
+
+  setTimeout(refreshHealthA, 3000);
+}
+
+function refreshHealthB() {
+
+  var urlB = "http://[$$REPLACE_S3_PREFIX$$]/B/smil:__REPLACE_STREAM__.smil/health_report.json";
+  urlB = urlB.replace(new RegExp("__REPLACE_STREAM__", 'g'),document.getElementById('streamName').value)
+  urlB = urlB.replace("[$$REPLACE_S3_PREFIX$$]",document.getElementById('s3prefixB').value)
+
+  $.ajax({
+    url: urlB,
+    dataType: 'json',
+    timeout: 4000,
+    success: function(file_data) {
+      refreshHealthUI("healthBsummary", "healthB",false, file_data)
+    },
+    error: function() {
+      refreshHealthUI("healthBsummary", "healthB",true, null);
+    }
+  });
+
+  setTimeout(refreshHealthB, 3000);
+}
+
+function refreshHealthUI(label, table, error, data)
+{
+  var labelHealth = document.getElementById(label);
+  if (error == true)
+  {
+    labelHealth.innerHTML = "Health: Communication error"
+    clearHtmlTable(table);
+  }
+  else
+  {
+    labelHealth.innerHTML = "Health: " + data.healthy + " (seg dur: " + data.segment_duration_secs + "s, Update time out: " + data.delete_chunklist_treshold_secs + "). Timestamp: " + data.updated;
+    buildHtmlTable(data.chunklist_data, table);
+  }
+}
+
+function clearHtmlTable(table_name)
+{
+  document.getElementById(table_name).innerHTML = ""
+}
+
+// Builds the HTML Table out of data.
+function buildHtmlTable(data, table_name) 
+{
+  clearHtmlTable(table_name);
+ 
+  var columns = addAllColumnHeaders(data, table_name);
+
+  for (var i = 0 ; i < data.length ; i++) 
+  {
+    var row$ = $('<tr/>');
+    for (var colIndex = 0 ; colIndex < columns.length ; colIndex++) 
+    {
+      var cellValue = data[i][columns[colIndex]];
+      if (cellValue == null) { cellValue = ""; }
+
+      var text = cellValue
+      var stylecell = ""
+      if (colIndex == 0)//URL
+      {
+        filename = cellValue.substring(cellValue.lastIndexOf('/')+1); 
+        text = '<a target="_blank" href="' + cellValue + '"">' + filename + '</a>';
+      }
+      if (colIndex == 1)//Secs
+      {
+        text = cellValue.toFixed(2)
+      }
+      if (colIndex == 2)//health
+      {
+        if (cellValue == true)
+        {
+          stylecell = 'style="background-color:green"'
+        }
+        else
+        {
+          stylecell = 'style="background-color:red"'
+        }
+      }
+
+      row$.append($('<td ' + stylecell + ' />').html(text));
+    }
+    $("#" + table_name).append(row$);
+  }
+}
+
+// Adds a header row to the table and returns the set of columns.
+// Need to do union of keys from all records as some records may not contain
+// all records
+function addAllColumnHeaders(data, table_name) 
+{
+  var columnSet = [];
+  var headerTr$ = $('<tr/>');
+
+  for (var i = 0 ; i < data.length ; i++) 
+  {
+    var rowHash = data[i];
+    for (var key in rowHash) 
+    {
+      if ($.inArray(key, columnSet) == -1)
+      {
+        columnSet.push(key);
+        headerTr$.append($('<th/>').html(key));
+      }
+    }
+  }
+  $("#" + table_name).append(headerTr$);
+
+  return columnSet;
+}
+
+function onSourceChanged() {
+
+  document.getElementById('wowzaAurl').disabled = true
+  document.getElementById('wowzaBurl').disabled = true
+  document.getElementById('s3prefixA').disabled = true
+  document.getElementById('s3prefixB').disabled = true
+  document.getElementById('cfdomain').disabled = true
+
+  if (document.getElementById('sourcecf').checked == true)
+  {
+    document.getElementById('cfdomain').disabled = false
+  }
+  else if (document.getElementById('sources3').checked == true)
+  {
+    document.getElementById('s3prefixA').disabled = false
+    document.getElementById('s3prefixB').disabled = false
+  }
+  else //Wowza
+  {
+    document.getElementById('wowzaAurl').disabled = false
+    document.getElementById('wowzaBurl').disabled = false
+  }
+
+  refreshLabels();
+}
+
+function onChangeText(){
+  refreshLabels();
+}
+
+function refreshLabels(){
+
+  if (document.getElementById('sourcewo').checked == true) {
+
+    var urlA = "http://[$$REPLACE_IP$$]:1935/__REPLACE_STREAM__/__REPLACE_STREAM__/playlist.m3u8";
+    urlA = urlA.replace("[$$REPLACE_IP$$]",document.getElementById('wowzaAurl').value);
+    urlA = urlA.replace(new RegExp("__REPLACE_STREAM__", 'g'),document.getElementById('streamName').value)
+    document.getElementById('lblA').innerHTML = '<a target="_blank" href="' + urlA + '"">' + urlA + '</a>'
+    document.getElementById('lblA').value = urlA
+
+    var urlB = "http://[$$REPLACE_IP$$]:1935/__REPLACE_STREAM__/__REPLACE_STREAM__/playlist.m3u8";
+    urlB = urlB.replace("[$$REPLACE_IP$$]",document.getElementById('wowzaBurl').value);
+    urlB = urlB.replace(new RegExp("__REPLACE_STREAM__", 'g'),document.getElementById('streamName').value)
+    document.getElementById('lblB').innerHTML = '<a target="_blank" href="' + urlB + '"">' + urlB + '</a>'
+    document.getElementById('lblB').value = urlB
+
+    document.getElementById('lblR').innerHTML = "-"
+    document.getElementById('lblR').value = ""
+  }
+  
+  if (document.getElementById('sources3').checked == true) {
+
+    var urlA = "http://[$$REPLACE_S3_PREFIX$$]/A/__REPLACE_STREAM__/smil:__REPLACE_STREAM__.smil/playlist.m3u8";
+    urlA = urlA.replace(new RegExp("__REPLACE_STREAM__", 'g'),document.getElementById('streamName').value)
+    urlA = urlA.replace("[$$REPLACE_S3_PREFIX$$]",document.getElementById('s3prefixA').value)
+    document.getElementById('lblA').innerHTML = '<a target="_blank" href="' + urlA + '"">' + urlA + '</a>'
+    document.getElementById('lblA').value = urlA
+
+    var urlB = "http://[$$REPLACE_S3_PREFIX$$]/B/__REPLACE_STREAM__/smil:__REPLACE_STREAM__.smil/playlist.m3u8";
+    urlB = urlB.replace(new RegExp("__REPLACE_STREAM__", 'g'),document.getElementById('streamName').value)
+    urlB = urlB.replace("[$$REPLACE_S3_PREFIX$$]",document.getElementById('s3prefixB').value)
+    document.getElementById('lblB').innerHTML = '<a target="_blank" href="' + urlB + '"">' + urlB + '</a>'
+    document.getElementById('lblB').value = urlB
+
+    var urlR = "http://[$$REPLACE_S3_PREFIX$$]/A/__REPLACE_STREAM__/smil:__REPLACE_STREAM__.smil/playlist_redundant_s3.m3u8";
+    urlR = urlR.replace(new RegExp("__REPLACE_STREAM__", 'g'),document.getElementById('streamName').value)
+    urlR = urlR.replace("[$$REPLACE_S3_PREFIX$$]",document.getElementById('s3prefixA').value)
+    document.getElementById('lblR').innerHTML = '<a target="_blank" href="' + urlR + '"">' + urlR + '</a>'
+    document.getElementById('lblR').value = urlR
+  }
+
+  if (document.getElementById('sourcecf').checked == true) {
+
+    var urlA = "http://[$$REPLACE_CF_DIST$$]/A/__REPLACE_STREAM__/smil:__REPLACE_STREAM__.smil/playlist.m3u8";
+    urlA = urlA.replace(new RegExp("__REPLACE_STREAM__", 'g'),document.getElementById('streamName').value)
+    urlA = urlA.replace("[$$REPLACE_CF_DIST$$]",document.getElementById('cfdomain').value)
+    document.getElementById('lblA').innerHTML = '<a target="_blank" href="' + urlA + '"">' + urlA + '</a>'
+    document.getElementById('lblA').value = urlA
+
+    var urlB = "http://[$$REPLACE_CF_DIST$$]/B/__REPLACE_STREAM__/smil:__REPLACE_STREAM__.smil/playlist.m3u8";
+    urlB = urlB.replace(new RegExp("__REPLACE_STREAM__", 'g'),document.getElementById('streamName').value)
+    urlB = urlB.replace("[$$REPLACE_CF_DIST$$]",document.getElementById('cfdomain').value)
+     document.getElementById('lblB').innerHTML = '<a target="_blank" href="' + urlB + '"">' + urlB + '</a>'
+     document.getElementById('lblB').value = urlB
+
+
+    var urlR = "http://[$$REPLACE_CF_DIST$$]/A/__REPLACE_STREAM__/smil:__REPLACE_STREAM__.smil/playlist_redundant_cf.m3u8";
+    urlR = urlR.replace(new RegExp("__REPLACE_STREAM__", 'g'),document.getElementById('streamName').value)
+    urlR = urlR.replace("[$$REPLACE_CF_DIST$$]",document.getElementById('cfdomain').value)
+     document.getElementById('lblR').innerHTML = '<a target="_blank" href="' + urlR + '"">' + urlR + '</a>'
+     document.getElementById('lblR').value = urlR
+
+  }
+}
+
+function userSubmit() {
+  loadStream(document.getElementById('streamName').value);
+}
+
+function loadStream(streamName) 
+{
+    var vid_objA = document.getElementById("videoA");
+    vid_objA.src = document.getElementById('lblA').value;
+    vid_objA.load();
+    vid_objA.play();
+    
+    var vid_objB = document.getElementById("videoB");
+    vid_objB.src = document.getElementById('lblB').value;
+    vid_objB.load();
+    vid_objB.play();
+   
+    var vid_objR = document.getElementById("videoRedundant");
+    vid_objR.src = document.getElementById('lblR').value;
+    vid_objR.load();
+    vid_objR.play();
+}
+</script>
+
+</body>
+</html>
